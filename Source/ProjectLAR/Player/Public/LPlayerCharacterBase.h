@@ -33,5 +33,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<class UCameraComponent> CameraComp;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TObjectPtr<class UWidgetComponent> PlayerHPWidget;
+
+public:
+	virtual void Dash(const FVector& DashDirection);
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float DashPower = 3000.f;
+	
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Dash")
+	bool bBlink = false;
+	
+
 };

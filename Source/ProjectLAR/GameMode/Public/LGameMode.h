@@ -14,4 +14,8 @@ class PROJECTLAR_API ALGameMode : public AGameMode
 {
 	GENERATED_BODY()
 	
+public:
+	ALGameMode();
+	
+	virtual void BeginPlay() override;
 };

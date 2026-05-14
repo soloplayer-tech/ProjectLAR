@@ -3,3 +3,12 @@
 
 #include "./../Public/LGameMode.h"
 
+ALGameMode::ALGameMode()
+{
+
+}
+
+void ALGameMode::BeginPlay()
+{
+	Super::BeginPlay();
+}
