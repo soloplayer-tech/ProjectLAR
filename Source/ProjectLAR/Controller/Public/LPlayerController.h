@@ -31,9 +31,12 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	TObjectPtr<UInputAction> PlayerDashAction;
 	
+	UPROPERTY(EditAnywhere, Category = "Input")
+	TObjectPtr<UInputAction> BasicAttackAction;
+	
 	void MoveToMouseCursor();
 	void DashInput();
+	void BasicAttackInput();
 	
 	bool GetMouseWorldLocation(FVector& OutWorldLocation) const;
-	
 };

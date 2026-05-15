@@ -7,6 +7,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
 #include "Engine/LocalPlayer.h"
+#include "ProjectLAR/Player/Public/LPlayerCharacter.h"
 #include "ProjectLAR/Player/Public/LPlayerCharacterBase.h"
 
 ALPlayerController::ALPlayerController()
@@ -60,11 +61,35 @@ void ALPlayerController::SetupInputComponent()
 				&ALPlayerController::DashInput
 			);
 		}
+		
+		if (BasicAttackAction)
+		{
+			EnhancedInput->BindAction(
+				BasicAttackAction,
+				ETriggerEvent::Triggered,
+				this,
+				&ALPlayerController::BasicAttackInput
+			);
+		}
 	}
 }
 
 void ALPlayerController::MoveToMouseCursor()
 {
+	ALPlayerCharacterBase* PlayerCharacter =
+		Cast<ALPlayerCharacterBase>(GetPawn());
+
+	if (!PlayerCharacter)
+	{
+		return;
+	}
+
+	// 공격/스킬 등 행동 중이면 우클릭 이동 금지
+	if (!PlayerCharacter->CanMove())
+	{
+		return;
+	}
+
 	FVector TargetLocation;
 	
 	if (!GetMouseWorldLocation(TargetLocation))
@@ -77,9 +102,16 @@ void ALPlayerController::MoveToMouseCursor()
 
 void ALPlayerController::DashInput()
 {
-	ALPlayerCharacterBase* PlayerCharacter = Cast<ALPlayerCharacterBase>(GetPawn());
+	ALPlayerCharacterBase* PlayerCharacter =
+		Cast<ALPlayerCharacterBase>(GetPawn());
 	
 	if (!PlayerCharacter)
+	{
+		return;
+	}
+
+	// 현재 상태에서 대쉬가 가능한지 확인
+	if (!PlayerCharacter->CanDash())
 	{
 		return;
 	}
@@ -91,7 +123,8 @@ void ALPlayerController::DashInput()
 		return;
 	}
 	
-	FVector DashDirection = MouseWorldLocation - PlayerCharacter->GetActorLocation();
+	FVector DashDirection =
+		MouseWorldLocation - PlayerCharacter->GetActorLocation();
 	
 	DashDirection.Z = 0.0f;
 	
@@ -103,8 +136,37 @@ void ALPlayerController::DashInput()
 	DashDirection.Normalize();
 	
 	StopMovement();
+
+	// 기본 공격 중 대쉬하면 기존 행동은 끊는다
+	PlayerCharacter->CancelCurrentAction();
 	
 	PlayerCharacter->Dash(DashDirection);
+}
+
+void ALPlayerController::BasicAttackInput()
+{
+	ALPlayerCharacter* PlayerCharacter = Cast<ALPlayerCharacter>(GetPawn());
+	
+	if (!PlayerCharacter)
+	{
+		return;
+	}
+	
+	if (!PlayerCharacter->CanBasicAttack())
+	{
+		return;
+	}
+	
+	FVector MouseWorldLocation;
+	
+	if (!GetMouseWorldLocation(MouseWorldLocation))
+	{
+		return;
+	}
+	
+	StopMovement();
+	
+	PlayerCharacter->BasicAttack(MouseWorldLocation);
 }
 
 bool ALPlayerController::GetMouseWorldLocation(FVector& OutWorldLocation) const

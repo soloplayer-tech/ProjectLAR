@@ -68,9 +68,43 @@ void ALPlayerCharacterBase::Dash(const FVector& DashDirection)
 	
 	
 	LaunchCharacter(
-		DashDirection* DashPower,
+		FinalDashDirection* DashPower,
 		true,
 		true
 		);
 }
 
+ELPlayerActionState ALPlayerCharacterBase::GetCurrentActionState() const
+{
+	return CurrentActionState;
+}
+
+void ALPlayerCharacterBase::SetCurrentActionState(ELPlayerActionState NewState)
+{
+	CurrentActionState = NewState;
+}
+
+bool ALPlayerCharacterBase::CanMove() const
+{
+	return CurrentActionState == ELPlayerActionState::Idle;
+	// 기본 상태에서만 이동 가능
+}
+
+bool ALPlayerCharacterBase::CanBasicAttack() const
+{
+	return CurrentActionState == ELPlayerActionState::Idle;
+	// 기본 상태에서만 베이직 어택 가능
+}
+
+bool ALPlayerCharacterBase::CanDash() const
+{
+	return CurrentActionState == ELPlayerActionState::Idle	
+		|| CurrentActionState == ELPlayerActionState::BasicAttack;
+	// 기본 상태 + 기본 공격 중에도 대쉬 가능
+}
+
+void ALPlayerCharacterBase::CancelCurrentAction()
+{
+	CurrentActionState = ELPlayerActionState::Idle;
+	// 상태를 기본으로 돌린다. 기본공격 할 때
+}

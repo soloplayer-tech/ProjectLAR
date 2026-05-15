@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "LPlayerActionState.h"
 #include "LPlayerCharacterBase.generated.h"
 
 UCLASS()
@@ -12,18 +13,13 @@ class PROJECTLAR_API ALPlayerCharacterBase : public ACharacter
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
 	ALPlayerCharacterBase();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 public:	
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-
-	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 public:
@@ -35,16 +31,27 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<class UWidgetComponent> PlayerHPWidget;
-
-public:
+	
 	virtual void Dash(const FVector& DashDirection);
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float DashPower = 3000.f;
-	
+	float DashPower = 10000.f;
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Dash")
 	bool bBlink = false;
 	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+	ELPlayerActionState CurrentActionState = ELPlayerActionState::Idle;
 
+public:
+	ELPlayerActionState GetCurrentActionState() const;
+	
+	void SetCurrentActionState(ELPlayerActionState NewState);
+	
+	bool CanMove() const;
+	bool CanBasicAttack() const;
+	bool CanDash() const;
+	
+	virtual void CancelCurrentAction();
 };
