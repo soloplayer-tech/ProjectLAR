@@ -9,6 +9,8 @@ AOB_BossCharacter::AOB_BossCharacter()
 {
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	
+	FSMComponent = CreateDefaultSubobject<UOB_BossFSMComponent>(TEXT("FSMComponent"));
 }
 
 // Called when the game starts or when spawned
@@ -29,4 +31,5 @@ void AOB_BossCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
+
 
