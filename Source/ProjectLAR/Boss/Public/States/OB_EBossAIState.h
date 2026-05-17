@@ -12,7 +12,7 @@
  */
 
 UENUM(BlueprintType)
-enum class EPlayerState : uint8
+enum class EBossState : uint8
 {
 	IDLE	UMETA(DisplayName = "Idle"),
 	MOVE	UMETA(DisplayName = "Move"),

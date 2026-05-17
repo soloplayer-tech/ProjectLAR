@@ -11,7 +11,7 @@
  * Boss의 공격패턴을 열거한다.
  */
 UENUM(BlueprintType)
-enum class EPlayerState : uint8
+enum class EAttackState : uint8
 {
 	HAMMER	UMETA(DisplayName = "Hammer Pattern"),
 	RUSH	UMETA(DisplayName = "Rush Pattern"),
