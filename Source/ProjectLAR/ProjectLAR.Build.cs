@@ -7,8 +7,16 @@ public class ProjectLAR : ModuleRules
 	public ProjectLAR(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" });
+		
+		// 팀원 ROLE에 따라 나뉜 파트를 한번에 빌드할 때 사용
+		// System.IO.Path.Combine(ModuleDirectory, "[ROLE]/Public") 형식으로 입력
+		PublicIncludePaths.AddRange(
+			new string[] {
+				System.IO.Path.Combine(ModuleDirectory, "Boss/Public")
+			}
+		);
+		
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore","AIModule" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
