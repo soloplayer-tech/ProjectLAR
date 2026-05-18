@@ -52,6 +52,7 @@ public:
 	bool CanMove() const;
 	bool CanBasicAttack() const;
 	bool CanDash() const;
+	bool CanUseSkill() const;
 	
 	virtual void CancelCurrentAction();
 };

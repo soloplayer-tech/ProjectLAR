@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "./../Public/LPlayerController.h"
+#include "LPlayerController.h"
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -70,6 +70,46 @@ void ALPlayerController::SetupInputComponent()
 				this,
 				&ALPlayerController::BasicAttackInput
 			);
+		}
+		
+		if (SkillQAction)
+		{
+			EnhancedInput->BindAction(
+				SkillQAction,
+				ETriggerEvent::Triggered,
+				this,
+				&ALPlayerController::SkillQInput
+				);
+		}
+		
+		if (SkillWAction)
+		{
+			EnhancedInput->BindAction(
+				SkillWAction,
+				ETriggerEvent::Triggered,
+				this,
+				&ALPlayerController::SkillWInput
+				);
+		}
+		
+		if (SkillEAction)
+		{
+			EnhancedInput->BindAction(
+				SkillEAction,
+				ETriggerEvent::Triggered,
+				this,
+				&ALPlayerController::SkillEInput
+				);
+		}
+		
+		if (SkillRAction)
+		{
+			EnhancedInput->BindAction(
+				SkillRAction,
+				ETriggerEvent::Triggered,
+				this,
+				&ALPlayerController::SkillRInput
+				);
 		}
 	}
 }
@@ -182,6 +222,52 @@ bool ALPlayerController::GetMouseWorldLocation(FVector& OutWorldLocation) const
 	
 	OutWorldLocation = HitResult.Location;
 	return true;
+}
+
+void ALPlayerController::SkillQInput()
+{
+	HandleSkillInput(ELPlayerSkillSlot::Q);
+}
+
+void ALPlayerController::SkillWInput()
+{
+	HandleSkillInput(ELPlayerSkillSlot::W);
+}
+
+void ALPlayerController::SkillEInput()
+{
+	HandleSkillInput(ELPlayerSkillSlot::E);
+}
+
+void ALPlayerController::SkillRInput()
+{
+	HandleSkillInput(ELPlayerSkillSlot::R);
+}
+
+void ALPlayerController::HandleSkillInput(ELPlayerSkillSlot SkillSlot)
+{
+	ALPlayerCharacter* PlayerCharacter = Cast<ALPlayerCharacter>(GetPawn());
+	if (!PlayerCharacter)
+	{
+		return;
+	}
+	
+	// 현재 상태에서 스킬 사용이 가능한지 확인
+	if (!PlayerCharacter->CanUseSkill())
+	{
+		return;
+	}
+	
+	FVector MouseworldLocation;
+	
+	if (!GetMouseWorldLocation(MouseworldLocation))
+	{
+		return;
+	}
+	
+	StopMovement();
+	
+	PlayerCharacter->UseSkill(SkillSlot, MouseworldLocation);
 }
 
 

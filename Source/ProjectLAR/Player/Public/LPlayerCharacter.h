@@ -3,7 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "./../Public/LPlayerCharacterBase.h"
+#include "LPlayerCharacterBase.h"
+#include "LPlayerSkillSlot.h"
 #include "LPlayerCharacter.generated.h"
 
 class UNiagaraSystem;
@@ -22,8 +23,15 @@ public:
 	
 	virtual void CancelCurrentAction() override;
 	
+	void UseSkill(ELPlayerSkillSlot SkillSlot, const FVector& TargetLocation);
+	
 protected:
 	void EndBasicAttack();
+	
+	void UseQSkill(const FVector& TargetLocation);
+	void UseWSkill(const FVector& TargetLocation);
+	void UseESkill(const FVector& TargetLocation);
+	void UseRSkill(const FVector& TargetLocation);
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack")
 	TObjectPtr<UNiagaraSystem> BasicAttackNiagara;
@@ -37,13 +45,34 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack")
 	float BasicAttackHeightOffset = 0.f;
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Dash|Blink")
+	float BlinkDuration = 0.2f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Dash|Blink")
+	TObjectPtr<UNiagaraSystem> BlinkStartEffect;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Dash|Blink")
+	TObjectPtr<UNiagaraSystem> BlinkEndEffect;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Skill|Q")
+	TObjectPtr<UNiagaraSystem> QMeteorNiagara;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Skill|Q")
+	float QMeteorDuration = 0.7f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Skill|Q")
+	float QMeteorSpawnHeight = 1000.f;
+	
 private:
 	FTimerHandle BasicAttackTimerHandle;
 	
-	float BlinkDuration = 0.5f;
 	FTimerHandle BlinkTimerHandle;
 	
+	FTimerHandle SkillTimerHandle;
+	
+	void EndSkill();
 	void EndBlink();
+	
 	
 	
 };

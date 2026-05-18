@@ -25,9 +25,17 @@ public class ProjectLAR : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[] { "Niagara" });
 
+		PublicIncludePaths.AddRange(new string[]
+		{
+			System.IO.Path.Combine(ModuleDirectory, "Boss/Public"),
+			System.IO.Path.Combine(ModuleDirectory, "Player/Public"),
+			System.IO.Path.Combine(ModuleDirectory, "Controller/Public"),
+			System.IO.Path.Combine(ModuleDirectory, "GameMode/Public")
+			
+		});
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
-		
+
 		// Uncomment if you are using online features
 		// PrivateDependencyModuleNames.Add("OnlineSubsystem");
 

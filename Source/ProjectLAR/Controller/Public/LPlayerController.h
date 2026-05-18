@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "LPlayerSkillSlot.h"
 #include "GameFramework/PlayerController.h"
 #include "LPlayerController.generated.h"
 
@@ -34,9 +35,29 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	TObjectPtr<UInputAction> BasicAttackAction;
 	
+	UPROPERTY(EditAnywhere, Category = "Skill")
+	TObjectPtr<UInputAction> SkillQAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Skill")
+	TObjectPtr<UInputAction> SkillWAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Skill")
+	TObjectPtr<UInputAction> SkillEAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Skill")
+	TObjectPtr<UInputAction> SkillRAction;
+	
+
 	void MoveToMouseCursor();
 	void DashInput();
 	void BasicAttackInput();
 	
 	bool GetMouseWorldLocation(FVector& OutWorldLocation) const;
+	
+	void SkillQInput();
+	void SkillWInput();
+	void SkillEInput();
+	void SkillRInput();
+	
+	void HandleSkillInput(ELPlayerSkillSlot SkillSlot);
 };
