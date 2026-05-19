@@ -12,12 +12,10 @@
  */
 
 UENUM(BlueprintType)
-enum class EBossState : uint8
+enum class EBossAIState : uint8
 {
 	IDLE	UMETA(DisplayName = "Idle"),
 	MOVE	UMETA(DisplayName = "Move"),
-	DAMAGE  UMETA(DisplayName = "Damage"),
-	DIE		UMETA(DisplayName = "Dead"),
 	ATTACK  UMETA(DisplayName = "Attack"),
 	STUNNED UMETA(DisplayName = "Stunned")
 };

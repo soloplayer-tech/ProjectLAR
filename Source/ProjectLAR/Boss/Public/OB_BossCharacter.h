@@ -7,6 +7,10 @@
 #include "GameFramework/Character.h"
 #include "OB_BossCharacter.generated.h"
 
+/**
+ * @brief '컴포넌트들을 누가 들고 있지?' → ABossCharacter
+ */
+
 UCLASS()
 class PROJECTLAR_API AOB_BossCharacter : public ACharacter
 {

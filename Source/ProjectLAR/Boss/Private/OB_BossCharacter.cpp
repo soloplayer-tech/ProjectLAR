@@ -11,6 +11,9 @@ AOB_BossCharacter::AOB_BossCharacter()
 	PrimaryActorTick.bCanEverTick = true;
 	
 	FSMComponent = CreateDefaultSubobject<UOB_BossFSMComponent>(TEXT("FSMComponent"));
+	
+	// AutoPossessAI로 컨트롤러 자동 연결
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 }
 
 // Called when the game starts or when spawned

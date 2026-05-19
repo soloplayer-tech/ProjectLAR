@@ -4,11 +4,11 @@
 #include "OB_BossAIContoller.h"
 #include "OB_BossCharacter.h"
 
-/* TODO:
+/* TODO: 실제로 캐릭터를 움직이는 건 누구지?' → AIController. 상태변경 시 MoveToActor 실행
  * 1. 상태별 동작 정의
  * 2. 테스트 대상 객체(Dummy Player) 생성
  * 3. 엔진에서 BP 생성 및 동작 테스트
- * 4. 실체 충돌 담당 무기 개발 
+ * 4. 실체 충돌 담당 무기 개발
  */
 
 // Sets default values
@@ -33,8 +33,9 @@ void AOB_BossAIContoller::Tick(float DeltaTime)
 
 
 // OnGetPawn에서 FSM 컴포넌트 캐싱
-void AOB_BossAIContoller::OnGetPawn(APawn* InPawn)
+void AOB_BossAIContoller::OnPossess(APawn* InPawn)
 {
+	UE_LOG(LogTemp, Log, TEXT("Call OnPossess"));
 	Super::OnPossess(InPawn);
 	BossCharacter = Cast<AOB_BossCharacter>(InPawn);
 	FSMComp = BossCharacter -> GetFSMComponent();

@@ -31,12 +31,13 @@ public:
 	
 	float AcceptanceRadius;
 	
-	void OnGetPawn(APawn* InPawn);
 	void StartMove(AActor* Target);
 	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	
+	void OnPossess(APawn* InPawn) override; // 원본이 protected이기 때문에 protected안에 선언
 
 public:
 	// Called every frame
