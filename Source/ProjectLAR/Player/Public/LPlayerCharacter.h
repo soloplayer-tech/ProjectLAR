@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "LPlayerCharacterBase.h"
 #include "LPlayerSkillSlot.h"
+#include "ProjectLAR/Skill/Public/LIceLanceActor.h"
 #include "LPlayerCharacter.generated.h"
 
 class UNiagaraSystem;
@@ -17,7 +18,7 @@ class PROJECTLAR_API ALPlayerCharacter : public ALPlayerCharacterBase
 public:
 	ALPlayerCharacter();
 	
-	virtual void Dash(const FVector& DashDirection);
+	virtual void Dash(const FVector& DashDirection) override;
 	
 	void BasicAttack(const FVector& TargetLocation);
 	
@@ -54,6 +55,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Dash|Blink")
 	TObjectPtr<UNiagaraSystem> BlinkEndEffect;
 
+	// =======================================================================================
+
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Skill|Q")
 	TObjectPtr<UNiagaraSystem> QMeteorNiagara;
 	
@@ -62,6 +66,63 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Skill|Q")
 	float QMeteorSpawnHeight = 1000.f;
+	
+	// =======================================================================================
+	// W Skill - Bezier Ice Lance
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
+	TSubclassOf<ALIceLanceActor> IceLanceClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
+	int32 IceLanceCount = 5;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
+	float IceLanceTravelDuration = 0.45f;
+
+	// 준비 위치: 캐릭터 뒤쪽으로 얼마나 띄울지
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
+	float IceLanceReadyBackOffset = 70.0f;
+
+	// 준비 위치: 좌우 간격
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
+	float IceLanceReadySideSpacing = 110.0f;
+
+	// 준비 위치: 기본 높이
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
+	float IceLanceReadyHeight = 180.0f;
+
+	// 가운데 창을 살짝 더 높게 만드는 값
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
+	float IceLanceReadyHeightFalloff = 25.0f;
+
+	// 베지어 곡선이 좌우로 휘는 정도
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
+	float IceLanceCurveSideOffset = 180.0f;
+
+	// 베지어 곡선이 위로 솟는 정도
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
+	float IceLanceCurveHeightOffset = 120.0f;
+
+	// 목표 지점에 꽂히는 높이
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
+	float IceLanceEndHeightOffset = 60.0f;
+
+	// 생성 후 발사까지의 준비 시간
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
+	float IceLanceReadyDuration = 0.18f;
+
+	// 발사 시간차
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
+	float IceLanceFireInterval = 0.05f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
+	float WSkillLockDuration = 0.35f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
+	TObjectPtr<UNiagaraSystem> WIceLanceNiagara;
+	
+	// =======================================================================================
+
 	
 private:
 	FTimerHandle BasicAttackTimerHandle;

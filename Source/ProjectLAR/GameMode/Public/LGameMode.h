@@ -18,4 +18,5 @@ public:
 	ALGameMode();
 	
 	virtual void BeginPlay() override;
+	
 };

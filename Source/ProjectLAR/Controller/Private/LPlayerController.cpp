@@ -76,7 +76,7 @@ void ALPlayerController::SetupInputComponent()
 		{
 			EnhancedInput->BindAction(
 				SkillQAction,
-				ETriggerEvent::Triggered,
+				ETriggerEvent::Started,
 				this,
 				&ALPlayerController::SkillQInput
 				);
@@ -86,7 +86,7 @@ void ALPlayerController::SetupInputComponent()
 		{
 			EnhancedInput->BindAction(
 				SkillWAction,
-				ETriggerEvent::Triggered,
+				ETriggerEvent::Started,
 				this,
 				&ALPlayerController::SkillWInput
 				);
@@ -96,7 +96,7 @@ void ALPlayerController::SetupInputComponent()
 		{
 			EnhancedInput->BindAction(
 				SkillEAction,
-				ETriggerEvent::Triggered,
+				ETriggerEvent::Started,
 				this,
 				&ALPlayerController::SkillEInput
 				);
@@ -106,7 +106,7 @@ void ALPlayerController::SetupInputComponent()
 		{
 			EnhancedInput->BindAction(
 				SkillRAction,
-				ETriggerEvent::Triggered,
+				ETriggerEvent::Started,
 				this,
 				&ALPlayerController::SkillRInput
 				);

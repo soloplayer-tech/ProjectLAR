@@ -5,8 +5,9 @@
 #include "NiagaraFunctionLibrary.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "TimerManager.h"
-#include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
+#include "ProjectLAR/Skill/Public/LIceLanceActor.h"
+#include "TimerManager.h"
 
 ALPlayerCharacter::ALPlayerCharacter()
 {
@@ -25,30 +26,29 @@ void ALPlayerCharacter::Dash(const FVector& DashDirection)
 				GetActorLocation(),
 				GetActorRotation()
 			);
-			
-			if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
-			{
-				MovementComp->StopMovementImmediately();
-			}
 		}
-		
+
 		if (USkeletalMeshComponent* MeshComp = GetMesh())
 		{
 			MeshComp->SetHiddenInGame(true, true);
 		}
-		
+
 		GetWorldTimerManager().ClearTimer(BlinkTimerHandle);
-		
+
 		GetWorldTimerManager().SetTimer(
 			BlinkTimerHandle,
 			this,
 			&ALPlayerCharacter::EndBlink,
 			BlinkDuration,
 			false
-			);
-		
+		);
 	}
-	
+
+	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
+	{
+		MovementComp->StopMovementImmediately();
+	}
+
 	Super::Dash(DashDirection);
 }
 
@@ -61,17 +61,17 @@ void ALPlayerCharacter::EndBlink()
 {
 	if (BlinkEndEffect)
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(	
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(),
 			BlinkEndEffect,
 			GetActorLocation(),
 			GetActorRotation()
-			);
-		
-		if (USkeletalMeshComponent* MeshComp = GetMesh())
-		{
-			MeshComp->SetHiddenInGame(false, true);
-		}
+		);
+	}
+
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		MeshComp->SetHiddenInGame(false, true);
 	}
 }
 
@@ -145,9 +145,7 @@ void ALPlayerCharacter::EndBasicAttack()
 
 void ALPlayerCharacter::UseQSkill(const FVector& TargetLocation)
 {
-	// =========================
-	// 1. 캐릭터가 마우스 위치를 바라보게 하기
-	// =========================
+	// 캐릭터가 마우스 위치를 바라보게 하기
 	FVector AttackDirection = TargetLocation - GetActorLocation();
 	AttackDirection.Z = 0.0f;
 
@@ -167,31 +165,23 @@ void ALPlayerCharacter::UseQSkill(const FVector& TargetLocation)
 			0.0f
 		)
 	);
-
-	// =========================
-	// 2. 현재 움직임 즉시 정지
-	// =========================
+	
+	// 현재 움직임 즉시 정지
 	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
 	{
 		MovementComp->StopMovementImmediately();
 	}
-
-	// =========================
-	// 3. 상태를 Skill로 변경
-	// =========================
+	
+	// 상태를 Skill로 변경
 	SetCurrentActionState(ELPlayerActionState::Skill);
-
-	// =========================
-	// 4. 메테오 생성 위치 계산
-	// =========================
+	
+	// 메테오 생성 위치 계산
 	FVector SpawnLocation = TargetLocation;
 
 	// 메테오가 위에서 떨어지는 Niagara라면 높은 위치에서 생성
 	SpawnLocation.Z += QMeteorSpawnHeight;
-
-	// =========================
-	// 5. 메테오 Niagara 생성
-	// =========================
+	
+	// 메테오 Niagara 생성
 	if (QMeteorNiagara)
 	{
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
@@ -201,10 +191,8 @@ void ALPlayerCharacter::UseQSkill(const FVector& TargetLocation)
 			FRotator::ZeroRotator
 		);
 	}
-
-	// =========================
-	// 6. 스킬 종료 타이머
-	// =========================
+	
+	// 스킬 종료 타이머
 	GetWorldTimerManager().ClearTimer(SkillTimerHandle);
 
 	GetWorldTimerManager().SetTimer(
@@ -218,7 +206,131 @@ void ALPlayerCharacter::UseQSkill(const FVector& TargetLocation)
 
 void ALPlayerCharacter::UseWSkill(const FVector& TargetLocation)
 {
+	if (!IceLanceClass)
+	{
+		return;
+	}
+	
+	// 공격 방향 계산
+	FVector SkillDirection = TargetLocation - GetActorLocation();
+	SkillDirection.Z = 0.0f;
+
+	if (SkillDirection.IsNearlyZero())
+	{
+		return;
+	}
+
+	SkillDirection.Normalize();
+
+	// 캐릭터 기준 오른쪽 방향
+	const FVector RightDirection = FVector::CrossProduct(
+		FVector::UpVector,
+		SkillDirection
+	).GetSafeNormal();
+
+	// 캐릭터가 마우스 방향 바라보기
+	const FRotator SkillRotation = SkillDirection.Rotation();
+
+	SetActorRotation(
+		FRotator(
+			0.0f,
+			SkillRotation.Yaw,
+			0.0f
+		)
+	);
+	
+	// 이동 정지
+	
+	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
+	{
+		MovementComp->StopMovementImmediately();
+	}
+	
+	// 상태 Skill
+	SetCurrentActionState(ELPlayerActionState::Skill);
+	
+	// 얼음창 5개 생성
+	const float CenterIndex = (IceLanceCount - 1) * 0.5f;
+
+	for (int32 i = 0; i < IceLanceCount; ++i)
+	{
+		const float SideIndex = i - CenterIndex;
+		
+		// 얼음창 준비 위치
+		FVector StartLocation =
+			GetActorLocation()
+			- SkillDirection * IceLanceReadyBackOffset
+			+ RightDirection * (SideIndex * IceLanceReadySideSpacing);
+
+		const float HeightOffset =
+			IceLanceReadyHeight
+			- FMath::Abs(SideIndex) * IceLanceReadyHeightFalloff;
+
+		StartLocation.Z += HeightOffset;
+		
+		// 도착점
+		FVector EndLocation = TargetLocation;
+		EndLocation.Z += IceLanceEndHeightOffset;
+		
+		// 베지어 조절점
+		FVector ControlLocation =
+			(StartLocation + EndLocation) * 0.5f;
+
+		ControlLocation += RightDirection * (SideIndex * IceLanceCurveSideOffset);
+		ControlLocation.Z += IceLanceCurveHeightOffset;
+		// 발사 딜레이
+		// 가운데  안쪽  바깥쪽 순서
+		const float FireDelay =
+			IceLanceReadyDuration
+			+ FMath::Abs(SideIndex) * IceLanceFireInterval;
+		
+		// 얼음창 액터 소환
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		SpawnParams.Instigator = this;
+
+		ALIceLanceActor* IceLance =
+			GetWorld()->SpawnActor<ALIceLanceActor>(
+				IceLanceClass,
+				StartLocation,
+				SkillRotation,
+				SpawnParams
+			);
+
+		if (IceLance)
+		{
+			IceLance->InitializeBezierPath(
+				StartLocation,
+				ControlLocation,
+				EndLocation,
+				IceLanceTravelDuration,
+				FireDelay
+			);
+		}
+	}
+	
+	if (WIceLanceNiagara)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(	
+		GetWorld(),
+		WIceLanceNiagara,
+		GetActorLocation(),
+		GetActorRotation()
+		);
+	}
+	// 스킬 행동 잠금 종료 타이머
+	GetWorldTimerManager().ClearTimer(SkillTimerHandle);
+
+	GetWorldTimerManager().SetTimer(
+		SkillTimerHandle,
+		this,
+		&ALPlayerCharacter::EndSkill,
+		WSkillLockDuration,
+		false
+	);
 }
+
+
 
 void ALPlayerCharacter::UseESkill(const FVector& TargetLocation)
 {
