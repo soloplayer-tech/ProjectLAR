@@ -24,7 +24,7 @@ public:
 	AOB_BossCharacter();
 	
 	UFUNCTION()
-	UOB_BossFSMComponent* GetFSMComponent() const { return FSMComponent; }
+	UOB_BossFSMComponent* GetFSMComponent() const { UE_LOG(LogTemp, Log, TEXT("Call GetFSMComponent")); return FSMComponent; }
 	
 protected:
 	// Called when the game starts or when spawned

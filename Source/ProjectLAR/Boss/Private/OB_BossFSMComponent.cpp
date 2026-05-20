@@ -34,12 +34,12 @@ void UOB_BossFSMComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 }
 
 
-void UOB_BossFSMComponent::SetState(EBossAIState NewState)
+void UOB_BossFSMComponent::SetState(EBossBattleState NewState)
 {
 	if (CurAIState == NewState) return;
 	// OnExitState(CurAIState); // TODO: ExitState로 상태 해제 관리할 요소가 없어 주석 -> 향후 추가 시 내용 재정의
 	
-	FString DisplayName = StaticEnum<EBossAIState>()->GetDisplayNameTextByValue((int64) CurAIState).ToString();
+	FString DisplayName = StaticEnum<EBossBattleState>()->GetDisplayNameTextByValue((int64) CurAIState).ToString();
 	UE_LOG(LogTemp, Warning, TEXT("[FSM] %s"), *DisplayName);
 
 	CurAIState = NewState;
@@ -47,7 +47,7 @@ void UOB_BossFSMComponent::SetState(EBossAIState NewState)
 }
 
 // 상태 진입 시 행동 정의 
-void UOB_BossFSMComponent::OnEnterState(EBossAIState BossState)
+void UOB_BossFSMComponent::OnEnterState(EBossBattleState BossState)
 {	
 	/* TODO :
 	 * 각 상태별 행동 정의 
@@ -57,10 +57,10 @@ void UOB_BossFSMComponent::OnEnterState(EBossAIState BossState)
 	
 	switch (BossState)
 	{
-	case EBossAIState::	IDLE:		GetOwner()-> GetInstigatorController() -> StopMovement(); break;
-	case EBossAIState::	MOVE:		break;
-	case EBossAIState::	ATTACK:		break;
-	case EBossAIState::	STUNNED:	break;
+	case EBossBattleState::	IDLE:		GetOwner()-> GetInstigatorController() -> StopMovement(); break;
+	case EBossBattleState::	MOVE:		break;
+	case EBossBattleState::	ATTACK:		break;
+	case EBossBattleState::	STUNNED:	break;
 	}
 }
 
