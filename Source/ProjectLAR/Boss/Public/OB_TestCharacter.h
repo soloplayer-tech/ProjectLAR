@@ -3,8 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "OB_TestController.h"
 #include "GameFramework/Character.h"
 #include "OB_TestCharacter.generated.h"
+
+class UInputAction;
 
 UCLASS()
 class PROJECTLAR_API AOB_TestCharacter : public ACharacter
@@ -33,11 +36,18 @@ public:
 	TObjectPtr<class UCameraComponent> CameraComp;
 	
 	UPROPERTY(EditAnywhere, Category=TestVar)
-	TObjectPtr<class UInputAction> IA_Move;
+	TObjectPtr<UInputAction> IA_Move;
+	
+	UPROPERTY(EditAnywhere, Category = TestVar)
+	TObjectPtr<UInputAction> IA_Look;	
 	
 	UPROPERTY(EditAnywhere, Category = MyVar)
-	TObjectPtr<class UInputAction> IA_Look;	
+	TObjectPtr<class UInputMappingContext> IMC_TestPlayer;
 	
+	UPROPERTY(EditAnywhere, Category = TestVar)
+	TObjectPtr<AOB_TestController> TestCtrl;
 	
+	void OnTestMove(const struct FInputActionValue& value);
+	void OnTestLook(const struct FInputActionValue& value);
 	
 };

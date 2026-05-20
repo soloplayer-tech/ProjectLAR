@@ -13,4 +13,5 @@ UCLASS()
 class PROJECTLAR_API AOB_TestController : public APlayerController
 {
 	GENERATED_BODY()
+
 };

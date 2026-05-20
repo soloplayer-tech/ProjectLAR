@@ -7,8 +7,7 @@
 #include "OB_EAttackPattern.generated.h"
 
 /**
- * TODO:
- * Boss의 공격패턴을 열거한다.
+ *  @brief Boss의 공격패턴을 열거한다.
  */
 UENUM(BlueprintType)
 enum class EAttackState : uint8
