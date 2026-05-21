@@ -3,6 +3,8 @@
 
 #include "OB_BossFSMComponent.h"
 
+DEFINE_LOG_CATEGORY(LogBossFSM);
+
 
 // Sets default values for this component's properties
 UOB_BossFSMComponent::UOB_BossFSMComponent()
@@ -11,6 +13,7 @@ UOB_BossFSMComponent::UOB_BossFSMComponent()
 	// off to improve performance if you don't need them.
 	
 	PrimaryComponentTick.bCanEverTick = false; // 틱 계산 X, 이벤트 단위로 계산 진행
+	UE_LOG(LogBossFSM, Log, TEXT("Construct : AOB_BossCharacter"));
 
 	// ...
 }
@@ -40,7 +43,7 @@ void UOB_BossFSMComponent::SetState(EBossBattleState NewState)
 	// OnExitState(CurAIState); // TODO: ExitState로 상태 해제 관리할 요소가 없어 주석 -> 향후 추가 시 내용 재정의
 	
 	FString DisplayName = StaticEnum<EBossBattleState>()->GetDisplayNameTextByValue((int64) CurAIState).ToString();
-	UE_LOG(LogTemp, Warning, TEXT("[FSM] %s"), *DisplayName);
+	UE_LOG(LogBossFSM, Log, TEXT("[FSM] %s"), *DisplayName);
 
 	CurAIState = NewState;
 	OnEnterState(CurAIState);
@@ -53,7 +56,7 @@ void UOB_BossFSMComponent::OnEnterState(EBossBattleState BossState)
 	 * 각 상태별 행동 정의 
 	 */
 	
-	UE_LOG(LogTemp, Display, TEXT("[ Enter State : %s ]"), *UEnum::GetValueAsString(BossState));
+	UE_LOG(LogBossFSM, Display, TEXT("[ Enter State : %s ]"), *UEnum::GetValueAsString(BossState));
 	
 	switch (BossState)
 	{

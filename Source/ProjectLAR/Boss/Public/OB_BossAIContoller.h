@@ -8,6 +8,9 @@
 #include "OB_BossFSMComponent.h"
 #include "OB_BossAIContoller.generated.h"
 
+// NOTE : 선언 LogBossAIController 
+DECLARE_LOG_CATEGORY_EXTERN(LogBossAIController, Log, All);
+
 UCLASS()
 class PROJECTLAR_API AOB_BossAIContoller : public AAIController
 {

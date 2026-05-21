@@ -7,6 +7,8 @@
 #include "States/OB_EBossBattleState.h"
 #include "OB_BossFSMComponent.generated.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(LogBossFSM, Log, All);
+
 /**FSM Component
  * @brief '상태를 누가 관리하지?' → FSM 컴포넌트.
  */
@@ -24,15 +26,15 @@ public:
 	
 	// 보스 열겨형 호출
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BossFSM")
-	EBossBattleState CurAIState = EBossBattleState::IDLE;						// 현재 상태 저장 변수
+	EBossBattleState CurAIState = EBossBattleState::IDLE;						// 현재 상태 저장 변
 	
 	// UAIFSMComponent.h
 	UPROPERTY()
 	TSubclassOf<AOB_BossAIContoller> OwnerController;
 
 	void SetState(EBossBattleState NewState);								// 상태 변경
-	void OnEnterState(EBossBattleState BossState);						// 상태 ENTER 정의
-	// void OnExitState(EBossState BossState);						// TODO: 상태 EXIT 정의 현재 개발 단계상 불필요
+	void OnEnterState(EBossBattleState BossState);							// 상태 ENTER 정의
+	// void OnExitState(EBossState BossState);								// TODO: 상태 EXIT 정의 현재 개발 단계상 불필요
 
 protected:
 	// Called when the game starts

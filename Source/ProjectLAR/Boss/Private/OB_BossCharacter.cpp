@@ -3,12 +3,15 @@
 
 #include "ProjectLAR/Boss/Public/OB_BossCharacter.h"
 
+DEFINE_LOG_CATEGORY(LogBossCharacter);
 
 // Sets default values
 AOB_BossCharacter::AOB_BossCharacter()
 {
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	
+	UE_LOG(LogBossCharacter, Log, TEXT("Construct : AOB_BossCharacter"));
 	
 	FSMComponent = CreateDefaultSubobject<UOB_BossFSMComponent>(TEXT("FSMComponent"));
 	

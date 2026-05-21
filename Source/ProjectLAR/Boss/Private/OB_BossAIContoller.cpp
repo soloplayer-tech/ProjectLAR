@@ -4,6 +4,9 @@
 #include "OB_BossAIContoller.h"
 #include "OB_BossCharacter.h"
 
+// 카테고리 정의 
+DEFINE_LOG_CATEGORY(LogBossAIController);
+
 /* TODO: 실제로 캐릭터를 움직이는 건 누구지?' → AIController. 상태변경 시 MoveToActor 실행
  * 1. 상태별 동작 정의
  * 2. 테스트 대상 객체(Dummy Player) 생성
@@ -15,7 +18,8 @@
 AOB_BossAIContoller::AOB_BossAIContoller()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
+	UE_LOG(LogBossAIController, Log, TEXT("Construct : AOB_BossCharacter"));
 }
 
 // Called when the game starts or when spawned
@@ -35,7 +39,7 @@ void AOB_BossAIContoller::Tick(float DeltaTime)
 // OnGetPawn에서 FSM 컴포넌트 캐싱
 void AOB_BossAIContoller::OnPossess(APawn* InPawn)
 {
-	UE_LOG(LogTemp, Log, TEXT("Call OnPossess"));
+	UE_LOG(LogBossAIController, Log, TEXT("Call OnPossess"));
 	Super::OnPossess(InPawn);
 	BossCharacter = Cast<AOB_BossCharacter>(InPawn);
 	FSMComp = BossCharacter -> GetFSMComponent();
@@ -44,7 +48,7 @@ void AOB_BossAIContoller::OnPossess(APawn* InPawn)
 // FSM이 MOVE State 진입 시 호출
 void AOB_BossAIContoller::StartMove(AActor* Target)
 {
-	UE_LOG(LogTemp, Log, TEXT("Call MoveToActor"));
+	UE_LOG(LogBossAIController, Log, TEXT("Call MoveToActor"));
 	MoveToActor(Target, AcceptanceRadius);
 }
 
