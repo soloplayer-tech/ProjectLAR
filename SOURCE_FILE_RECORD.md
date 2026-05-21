@@ -1,0 +1,7 @@
+# Source File Record
+
+- File: `C:\Unreal\ProjectLAR\Source.zip`
+- Size: `17,498 bytes`
+- Last modified: `2026-05-20 15:11:16 KST` (`2026-05-20 06:11:16 UTC`)
+- SHA-256: `F1675E66079E4D3968B1FB03B2439BF71A753161FFA2E59F7E636748B1094318`
+

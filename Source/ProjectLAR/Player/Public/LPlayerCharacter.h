@@ -122,6 +122,14 @@ protected:
 	TObjectPtr<UNiagaraSystem> WIceLanceNiagara;
 	
 	// =======================================================================================
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|E")
+	TObjectPtr<UNiagaraSystem> EThunderNiagara;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Skill|E")
+	float EThunderDuration = 0.7f;
+	
+	// =======================================================================================
 
 	
 private:

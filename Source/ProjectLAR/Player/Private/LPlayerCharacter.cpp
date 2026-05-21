@@ -5,7 +5,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "TimerManager.h"
-#include "NiagaraSystem.h"
+//#include "NiagaraSystem.h"
 #include "ProjectLAR/Skill/Public/LIceLanceActor.h"
 #include "TimerManager.h"
 
@@ -251,7 +251,7 @@ void ALPlayerCharacter::UseWSkill(const FVector& TargetLocation)
 	
 	// 얼음창 5개 생성
 	const float CenterIndex = (IceLanceCount - 1) * 0.5f;
-
+	
 	for (int32 i = 0; i < IceLanceCount; ++i)
 	{
 		const float SideIndex = i - CenterIndex;
@@ -330,10 +330,62 @@ void ALPlayerCharacter::UseWSkill(const FVector& TargetLocation)
 	);
 }
 
-
-
 void ALPlayerCharacter::UseESkill(const FVector& TargetLocation)
 {
+	// 캐릭터가 마우스 위치를 바라보게 하기
+	FVector AttackDirection = TargetLocation - GetActorLocation();
+	AttackDirection.Z = 0.0f;
+
+	if (AttackDirection.IsNearlyZero())
+	{
+		return;
+	}
+
+	AttackDirection.Normalize();
+
+	const FRotator AttackRotation = AttackDirection.Rotation();
+
+	SetActorRotation(
+		FRotator(
+			0.0f,
+			AttackRotation.Yaw,
+			0.0f
+		)
+	);
+	
+	// 현재 움직임 즉시 정지
+	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
+	{
+		MovementComp->StopMovementImmediately();
+	}
+	
+	// 상태를 Skill로 변경
+	SetCurrentActionState(ELPlayerActionState::Skill);
+	
+	// 번개 생성 위치 계산
+	FVector SpawnLocation = TargetLocation;
+	
+	// 번개 Niagara 생성
+	if (EThunderNiagara)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			EThunderNiagara,
+			SpawnLocation,
+			FRotator::ZeroRotator
+		);
+	}
+	
+	// 스킬 종료 타이머
+	GetWorldTimerManager().ClearTimer(SkillTimerHandle);
+
+	GetWorldTimerManager().SetTimer(
+		SkillTimerHandle,
+		this,
+		&ALPlayerCharacter::EndSkill,
+		QMeteorDuration,
+		false
+	);
 }
 
 void ALPlayerCharacter::UseRSkill(const FVector& TargetLocation)
@@ -342,8 +394,8 @@ void ALPlayerCharacter::UseRSkill(const FVector& TargetLocation)
 
 void ALPlayerCharacter::CancelCurrentAction()
 {
-	// 대쉬로 기본 공격을 끊는 경우 클리어 타이머로 나중에 남아 있는 공격 종료 타이머가 상태를 덮어 쓰지 않도록 하기 위해서 미리 제거하는 것
 	GetWorldTimerManager().ClearTimer(BasicAttackTimerHandle);
+	GetWorldTimerManager().ClearTimer(SkillTimerHandle);
 
 	Super::CancelCurrentAction();
 }

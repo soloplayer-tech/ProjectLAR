@@ -59,7 +59,7 @@ void ALIceLanceActor::Tick(float DeltaTime)
 		0.0f,
 		1.0f
 	);
-
+	
 	const FVector PreviousLocation = GetActorLocation();
 	const FVector NewLocation = GetQuadraticBezierPoint(T);
 
@@ -82,6 +82,7 @@ void ALIceLanceActor::Tick(float DeltaTime)
 	if (T >= 1.0f)
 	{
 		Destroy();
+		
 	}
 }
 
@@ -126,3 +127,4 @@ FVector ALIceLanceActor::GetQuadraticBezierPoint(float T) const
 		+ 2.0f * OneMinusT * T * ControlPoint
 		+ T * T * EndPoint;
 }
+

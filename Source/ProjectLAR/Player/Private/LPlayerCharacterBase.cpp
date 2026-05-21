@@ -97,8 +97,9 @@ bool ALPlayerCharacterBase::CanBasicAttack() const
 bool ALPlayerCharacterBase::CanDash() const
 {
 	return CurrentActionState == ELPlayerActionState::Idle	
-		|| CurrentActionState == ELPlayerActionState::BasicAttack;
-	// 기본 상태 + 기본 공격 중에도 대쉬 가능
+		|| CurrentActionState == ELPlayerActionState::BasicAttack
+		|| CurrentActionState == ELPlayerActionState::Skill;
+	// 기본 상태 + 기본 공격 + 스킬 상태 중에도 대쉬 가능
 }
 
 bool ALPlayerCharacterBase::CanUseSkill() const
@@ -109,5 +110,6 @@ bool ALPlayerCharacterBase::CanUseSkill() const
 void ALPlayerCharacterBase::CancelCurrentAction()
 {
 	CurrentActionState = ELPlayerActionState::Idle;
+	CurrentActionState = ELPlayerActionState::HitReaction;
 	// 상태를 기본으로 돌린다. 기본공격 할 때
 }

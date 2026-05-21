@@ -39,6 +39,7 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> IceLanceMesh;
+	
 
 private:
 	FVector StartPoint;
@@ -62,4 +63,6 @@ private:
 
 	// 지금 실제로 날아가는 중인가?
 	bool bIsFlying = false;
+	
+	
 };
