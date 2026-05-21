@@ -21,10 +21,15 @@ public class ProjectLAR : ModuleRules
 			"Slate",
 			"SlateCore",
 			"Niagara",
+      "AIModule", 
+      "EnhancedInput"
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "Niagara" });
-
+		PrivateDependencyModuleNames.AddRange(new string[] { "Niagara", "EnhancedInput" });
+    
+    // 팀원 ROLE에 따라 나뉜 파트를 한번에 빌드할 때 사용
+		// System.IO.Path.Combine(ModuleDirectory, "[ROLE]/Public") 형식으로 입력
+    
 		PublicIncludePaths.AddRange(new string[]
 		{
 			System.IO.Path.Combine(ModuleDirectory, "Boss/Public"),
