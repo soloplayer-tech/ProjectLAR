@@ -8,13 +8,34 @@ public class ProjectLAR : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" });
+		PublicDependencyModuleNames.AddRange(new string[]
+		{
+			"Core",
+			"CoreUObject",
+			"Engine",
+			"InputCore",
+			"EnhancedInput",
+			"AIModule",
+			"NavigationSystem",
+			"UMG",
+			"Slate",
+			"SlateCore",
+			"Niagara",
+		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] {  });
+		PrivateDependencyModuleNames.AddRange(new string[] { "Niagara" });
 
+		PublicIncludePaths.AddRange(new string[]
+		{
+			System.IO.Path.Combine(ModuleDirectory, "Boss/Public"),
+			System.IO.Path.Combine(ModuleDirectory, "Player/Public"),
+			System.IO.Path.Combine(ModuleDirectory, "Controller/Public"),
+			System.IO.Path.Combine(ModuleDirectory, "GameMode/Public")
+			
+		});
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
-		
+
 		// Uncomment if you are using online features
 		// PrivateDependencyModuleNames.Add("OnlineSubsystem");
 
