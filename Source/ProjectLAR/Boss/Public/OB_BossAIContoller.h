@@ -2,19 +2,20 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "AIController.h"
-#include "OB_BossCharacter.h"
-#include "OB_BossFSMComponent.h"
+#include "Perception/AIPerceptionTypes.h"
 #include "OB_BossAIContoller.generated.h"
 
-// NOTE : 선언 LogBossAIController 
-DECLARE_LOG_CATEGORY_EXTERN(LogBossAIController, Log, All);
+class UOB_BossFSMComponent;
+class AOB_BossCharacter;
 
 UCLASS()
 class PROJECTLAR_API AOB_BossAIContoller : public AAIController
 {
 	GENERATED_BODY()
+	
+	UPROPERTY()
+	TObjectPtr<AActor> TargetActor = nullptr;
 
 public:
 	// Sets default values for this actor's properties
@@ -32,9 +33,20 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BossControl")
 	UOB_BossFSMComponent* FSMComp;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BossControl")
 	float AcceptanceRadius;
 	
+	UPROPERTY(VisibleAnywhere)
+	UAIPerceptionComponent* PerceptionComp;
+
+	UFUNCTION()
+	void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
+	
+	UFUNCTION()
 	void StartMove(AActor* Target);
+	
+	UFUNCTION()
+	AActor* GetTargetActor() const { return TargetActor; }
 	
 protected:
 	// Called when the game starts or when spawned

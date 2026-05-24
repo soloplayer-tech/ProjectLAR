@@ -1,9 +1,9 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "ProjectLAR/Boss/Public/OB_BossCharacter.h"
-
-DEFINE_LOG_CATEGORY(LogBossCharacter);
+#include "OB_BossCharacter.h"
+#include "OB_BossFSMComponent.h"
+#include "OB_LogManager.h"
 
 // Sets default values
 AOB_BossCharacter::AOB_BossCharacter()
@@ -11,7 +11,7 @@ AOB_BossCharacter::AOB_BossCharacter()
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	
-	UE_LOG(LogBossCharacter, Log, TEXT("Construct : AOB_BossCharacter"));
+	LOG_TRACE_INFO();
 	
 	FSMComponent = CreateDefaultSubobject<UOB_BossFSMComponent>(TEXT("FSMComponent"));
 	

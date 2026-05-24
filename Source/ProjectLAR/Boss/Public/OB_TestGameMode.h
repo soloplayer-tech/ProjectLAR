@@ -6,8 +6,6 @@
 #include "GameFramework/GameModeBase.h"
 #include "OB_TestGameMode.generated.h"
 
-DECLARE_LOG_CATEGORY_EXTERN(LogTestGameMode, Log, All);
-
 class ATargetPoint;
 /**
  * 

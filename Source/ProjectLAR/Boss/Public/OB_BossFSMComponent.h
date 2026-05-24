@@ -3,17 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "OB_BossAIContoller.h"
 #include "Components/ActorComponent.h"
 #include "States/OB_EBossBattleState.h"
 #include "OB_BossFSMComponent.generated.h"
 
-DECLARE_LOG_CATEGORY_EXTERN(LogBossFSM, Log, All);
-
 /**FSM Component
  * @brief '상태를 누가 관리하지?' → FSM 컴포넌트.
  */
-
-class AOB_BossAIContoller;
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class PROJECTLAR_API UOB_BossFSMComponent : public UActorComponent
@@ -30,7 +27,7 @@ public:
 	
 	// UAIFSMComponent.h
 	UPROPERTY()
-	TSubclassOf<AOB_BossAIContoller> OwnerController;
+	AOB_BossAIContoller* OwnerController;
 
 	void SetState(EBossBattleState NewState);								// 상태 변경
 	void OnEnterState(EBossBattleState BossState);							// 상태 ENTER 정의

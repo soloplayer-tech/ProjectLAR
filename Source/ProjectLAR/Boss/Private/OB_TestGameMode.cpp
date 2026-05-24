@@ -5,14 +5,13 @@
 #include "OB_TestGameMode.h"
 
 #include "NavigationSystem.h"
+#include "OB_LogManager.h"
 #include "Engine/TargetPoint.h"
 #include "GameFramework/Character.h"
 
-DEFINE_LOG_CATEGORY( LogTestGameMode );
-
 void AOB_TestGameMode::SpawnBoss()
 {
-	UE_LOG( LogTestGameMode, Log, TEXT("SpawnBoss"));
+	LOG_TRACE_INFO(TEXT("SpawnBoss"));
 	// ensureMsgf 배치 여부 로그처리
 	if (ensureMsgf(BossSpawnPoint != nullptr, TEXT("BossSpawnPoint is nullptr")))
 	{
@@ -25,7 +24,7 @@ void AOB_TestGameMode::SpawnBoss()
 
 void AOB_TestGameMode::SpawnBossAtRandLocation(FVector OriginLocation, float Radius)
 {
-	UE_LOG( LogTestGameMode, Log, TEXT("SpawnBossAtRandLocation"));
+	LOG_TRACE_INFO();
 	
 	// NavSystem 설정
 	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
