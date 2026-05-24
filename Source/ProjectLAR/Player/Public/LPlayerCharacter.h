@@ -6,9 +6,12 @@
 #include "LPlayerCharacterBase.h"
 #include "LPlayerSkillSlot.h"
 #include "ProjectLAR/Skill/Public/LIceLanceActor.h"
+#include "LMeteorActor.h"
+#include "LThunderActor.h"
 #include "LPlayerCharacter.generated.h"
 
 class UNiagaraSystem;
+class ALMeteorActor;
 
 UCLASS()
 class PROJECTLAR_API ALPlayerCharacter : public ALPlayerCharacterBase
@@ -33,6 +36,7 @@ protected:
 	void UseWSkill(const FVector& TargetLocation);
 	void UseESkill(const FVector& TargetLocation);
 	void UseRSkill(const FVector& TargetLocation);
+	void UseVSkill(const FVector& TargetLocation);
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack")
 	TObjectPtr<UNiagaraSystem> BasicAttackNiagara;
@@ -58,14 +62,20 @@ protected:
 	// =======================================================================================
 
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Skill|Q")
+	/*UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Skill|Q")
 	TObjectPtr<UNiagaraSystem> QMeteorNiagara;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Skill|Q")
 	float QMeteorDuration = 0.7f;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Skill|Q")
-	float QMeteorSpawnHeight = 1000.f;
+	float QMeteorSpawnHeight = 1000.f;*/
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Q")
+	TSubclassOf<ALMeteorActor> MeteorActorClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Q")
+	float QSkillLockDuration = 0.5f;
 	
 	// =======================================================================================
 	// W Skill - Bezier Ice Lance
@@ -123,14 +133,32 @@ protected:
 	
 	// =======================================================================================
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|E")
+	/*UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|E")
 	TObjectPtr<UNiagaraSystem> EThunderNiagara;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Skill|E")
-	float EThunderDuration = 0.7f;
+	float EThunderDuration = 0.7f;*/
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|E")
+	TSubclassOf<ALThunderActor> ThunderStormActorClass;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|E")
+	float ESkillLockDuration = 0.45f;
 	
 	// =======================================================================================
 
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|R")
+	TObjectPtr<UNiagaraSystem> RWindNiagara;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|R")
+	float RWindForwardOffset = 180.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|R")
+	float RWindHeightOffset = 60.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|R")
+	float RSkillLockDuration = 0.35f;
 	
 private:
 	FTimerHandle BasicAttackTimerHandle;

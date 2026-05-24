@@ -16,6 +16,11 @@ ALPlayerCharacter::ALPlayerCharacter()
 
 void ALPlayerCharacter::Dash(const FVector& DashDirection)
 {
+	if (!CanDash())
+	{
+		return;
+	}
+	
 	if (bBlink)
 	{
 		if (BlinkStartEffect)
@@ -35,20 +40,22 @@ void ALPlayerCharacter::Dash(const FVector& DashDirection)
 
 		GetWorldTimerManager().ClearTimer(BlinkTimerHandle);
 
-		GetWorldTimerManager().SetTimer(
-			BlinkTimerHandle,
-			this,
-			&ALPlayerCharacter::EndBlink,
-			BlinkDuration,
-			false
-		);
+		if (BlinkDuration > 0.0f)
+		{
+			GetWorldTimerManager().SetTimer(
+				BlinkTimerHandle,
+				this,
+				&ALPlayerCharacter::EndBlink,
+				BlinkDuration,
+				false
+			);
+		}
+		else
+		{
+			EndBlink();
+		}
 	}
-
-	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
-	{
-		MovementComp->StopMovementImmediately();
-	}
-
+	
 	Super::Dash(DashDirection);
 }
 
@@ -145,7 +152,6 @@ void ALPlayerCharacter::EndBasicAttack()
 
 void ALPlayerCharacter::UseQSkill(const FVector& TargetLocation)
 {
-	// 캐릭터가 마우스 위치를 바라보게 하기
 	FVector AttackDirection = TargetLocation - GetActorLocation();
 	AttackDirection.Z = 0.0f;
 
@@ -165,41 +171,42 @@ void ALPlayerCharacter::UseQSkill(const FVector& TargetLocation)
 			0.0f
 		)
 	);
-	
-	// 현재 움직임 즉시 정지
+
 	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
 	{
 		MovementComp->StopMovementImmediately();
 	}
-	
-	// 상태를 Skill로 변경
-	SetCurrentActionState(ELPlayerActionState::Skill);
-	
-	// 메테오 생성 위치 계산
-	FVector SpawnLocation = TargetLocation;
 
-	// 메테오가 위에서 떨어지는 Niagara라면 높은 위치에서 생성
-	SpawnLocation.Z += QMeteorSpawnHeight;
-	
-	// 메테오 Niagara 생성
-	if (QMeteorNiagara)
+	SetCurrentActionState(ELPlayerActionState::Skill);
+
+	if (MeteorActorClass)
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			GetWorld(),
-			QMeteorNiagara,
-			SpawnLocation,
-			FRotator::ZeroRotator
+		FVector ImpactLocation = TargetLocation;
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		SpawnParams.Instigator = this;
+
+		ALMeteorActor* MeteorActor = GetWorld()->SpawnActor<ALMeteorActor>(
+			MeteorActorClass,
+			ImpactLocation,
+			FRotator::ZeroRotator,
+			SpawnParams
 		);
+
+		if (MeteorActor)
+		{
+			MeteorActor->InitializeMeteor(ImpactLocation);
+		}
 	}
-	
-	// 스킬 종료 타이머
+
 	GetWorldTimerManager().ClearTimer(SkillTimerHandle);
 
 	GetWorldTimerManager().SetTimer(
 		SkillTimerHandle,
 		this,
 		&ALPlayerCharacter::EndSkill,
-		QMeteorDuration,
+		QSkillLockDuration,
 		false
 	);
 }
@@ -332,7 +339,6 @@ void ALPlayerCharacter::UseWSkill(const FVector& TargetLocation)
 
 void ALPlayerCharacter::UseESkill(const FVector& TargetLocation)
 {
-	// 캐릭터가 마우스 위치를 바라보게 하기
 	FVector AttackDirection = TargetLocation - GetActorLocation();
 	AttackDirection.Z = 0.0f;
 
@@ -352,30 +358,95 @@ void ALPlayerCharacter::UseESkill(const FVector& TargetLocation)
 			0.0f
 		)
 	);
-	
+
+	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
+	{
+		MovementComp->StopMovementImmediately();
+	}
+
+	SetCurrentActionState(ELPlayerActionState::Skill);
+
+	if (ThunderStormActorClass)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		SpawnParams.Instigator = this;
+
+		ALThunderActor* ThunderStormActor =
+			GetWorld()->SpawnActor<ALThunderActor>(
+				ThunderStormActorClass,
+				TargetLocation,
+				FRotator::ZeroRotator,
+				SpawnParams
+			);
+
+		if (ThunderStormActor)
+		{
+			ThunderStormActor->InitializeThunderStorm(TargetLocation);
+		}
+	}
+
+	GetWorldTimerManager().ClearTimer(SkillTimerHandle);
+
+	GetWorldTimerManager().SetTimer(
+		SkillTimerHandle,
+		this,
+		&ALPlayerCharacter::EndSkill,
+		ESkillLockDuration,
+		false
+	);
+}
+
+void ALPlayerCharacter::UseRSkill(const FVector& TargetLocation)
+{
+	// 마우스 위치를 기준으로 공격 방향 계산
+	FVector AttackDirection = TargetLocation - GetActorLocation();
+	AttackDirection.Z = 0.0f;
+
+	if (AttackDirection.IsNearlyZero())
+	{
+		return;
+	}
+
+	AttackDirection.Normalize();
+
+	// 마우스 방향으로 캐릭터 회전
+	const FRotator AttackRotation = AttackDirection.Rotation();
+
+	SetActorRotation(
+		FRotator(
+			0.0f,
+			AttackRotation.Yaw,
+			0.0f
+		)
+	);
+
 	// 현재 움직임 즉시 정지
 	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
 	{
 		MovementComp->StopMovementImmediately();
 	}
-	
+
 	// 상태를 Skill로 변경
 	SetCurrentActionState(ELPlayerActionState::Skill);
-	
-	// 번개 생성 위치 계산
-	FVector SpawnLocation = TargetLocation;
-	
-	// 번개 Niagara 생성
-	if (EThunderNiagara)
+
+	// 캐릭터 앞쪽에 바람 스킬 이펙트 생성
+	FVector SpawnLocation =
+		GetActorLocation()
+		+ AttackDirection * RWindForwardOffset;
+
+	SpawnLocation.Z += RWindHeightOffset;
+
+	if (RWindNiagara)
 	{
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(),
-			EThunderNiagara,
+			RWindNiagara,
 			SpawnLocation,
-			FRotator::ZeroRotator
+			AttackRotation
 		);
 	}
-	
+
 	// 스킬 종료 타이머
 	GetWorldTimerManager().ClearTimer(SkillTimerHandle);
 
@@ -383,20 +454,21 @@ void ALPlayerCharacter::UseESkill(const FVector& TargetLocation)
 		SkillTimerHandle,
 		this,
 		&ALPlayerCharacter::EndSkill,
-		QMeteorDuration,
+		RSkillLockDuration,
 		false
 	);
 }
 
-void ALPlayerCharacter::UseRSkill(const FVector& TargetLocation)
+void ALPlayerCharacter::UseVSkill(const FVector& TargetLocation)
 {
+	
 }
 
 void ALPlayerCharacter::CancelCurrentAction()
 {
 	GetWorldTimerManager().ClearTimer(BasicAttackTimerHandle);
 	GetWorldTimerManager().ClearTimer(SkillTimerHandle);
-
+	
 	Super::CancelCurrentAction();
 }
 
@@ -420,6 +492,10 @@ void ALPlayerCharacter::UseSkill(
 		
 	case ELPlayerSkillSlot::R:
 		UseRSkill(TargetLocation);
+		break;
+		
+	case ELPlayerSkillSlot::V:
+		UseVSkill(TargetLocation);
 		break;
 	}
 }

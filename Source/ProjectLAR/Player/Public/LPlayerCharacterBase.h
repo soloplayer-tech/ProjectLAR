@@ -34,8 +34,8 @@ public:
 	
 	virtual void Dash(const FVector& DashDirection);
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float DashPower = 10000.f;
+	/*UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float DashPower = 10000.f;*/
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Dash")
@@ -43,7 +43,35 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 	ELPlayerActionState CurrentActionState = ELPlayerActionState::Idle;
+	
+	void UpdateDash(float DeltaTime);
+	void EndDash();
+	void ResetDashCooldown();
+	
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Dash")
+	float DashDistance = 600.f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Dash")
+	float DashDuration = 0.15f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Dash")
+	float DashCooldown = 10.f;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Movement|Dash")
+	bool bIsDashing = false;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Movement|Dash")
+	bool bCanDash = true;
+	
+
+private:
+	FVector DashStartLocation;
+	FVector DashTargetLocation;
+	float DashElapsedTime = 0.f;
+	
+	FTimerHandle DashCooldownTimerHandle;
+	
 public:
 	ELPlayerActionState GetCurrentActionState() const;
 	
@@ -55,4 +83,10 @@ public:
 	bool CanUseSkill() const;
 	
 	virtual void CancelCurrentAction();
+	
+public:
+	bool IsDashing() const;
+	bool IsDashOnCooldown() const;
+	float GetDashCooldownRemaining() const;
+	float GetDashCooldownRatio() const;
 };
