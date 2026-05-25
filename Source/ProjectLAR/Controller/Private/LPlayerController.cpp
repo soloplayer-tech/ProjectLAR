@@ -5,6 +5,7 @@
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "LPlayerUIWidget.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
 #include "Engine/LocalPlayer.h"
 #include "ProjectLAR/Player/Public/LPlayerCharacter.h"
@@ -24,6 +25,8 @@ void ALPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	CreatePlayerUIWidget();
+	
 	if (ULocalPlayer* LocalPlayer = GetLocalPlayer())
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
@@ -34,6 +37,8 @@ void ALPlayerController::BeginPlay()
 			}
 		}
 	}
+	
+
 }
 
 void ALPlayerController::SetupInputComponent()
@@ -112,6 +117,65 @@ void ALPlayerController::SetupInputComponent()
 				);
 		}
 	}
+}
+
+void ALPlayerController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+
+	BindPlayerUIToPawn(InPawn);
+}
+
+void ALPlayerController::CreatePlayerUIWidget()
+{
+	UE_LOG(LogTemp, Warning, TEXT("CreatePlayerUIWidget Called"));
+
+	if (PlayerUIWidget)
+	{
+		BindPlayerUIToPawn(GetPawn());
+		return;
+	}
+	
+	if (!IsLocalController())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CreatePlayerUIWidget Failed: Not Local Controller"));
+		return;
+	}
+
+	if (!PlayerUIWidgetClass)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CreatePlayerUIWidget Failed: PlayerUIWidgetClass is null"));
+		return;
+	}
+
+	PlayerUIWidget = CreateWidget<ULPlayerUIWidget>(
+		this,
+		PlayerUIWidgetClass
+	);
+
+	if (!PlayerUIWidget)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CreatePlayerUIWidget Failed: CreateWidget returned null"));
+		return;
+	}
+
+	PlayerUIWidget->AddToViewport();
+
+	UE_LOG(LogTemp, Warning, TEXT("PlayerUIWidget AddToViewport Success"));
+
+	BindPlayerUIToPawn(GetPawn());
+}
+
+void ALPlayerController::BindPlayerUIToPawn(APawn* InPawn)
+{
+	if (!PlayerUIWidget)
+	{
+		return;
+	}
+
+	PlayerUIWidget->SetObservedCharacter(
+		Cast<ALPlayerCharacterBase>(InPawn)
+	);
 }
 
 void ALPlayerController::MoveToMouseCursor()
@@ -253,7 +317,7 @@ void ALPlayerController::HandleSkillInput(ELPlayerSkillSlot SkillSlot)
 	}
 	
 	// 현재 상태에서 스킬 사용이 가능한지 확인
-	if (!PlayerCharacter->CanUseSkill())
+	if (!PlayerCharacter->CanUseSkillSlot(SkillSlot))
 	{
 		return;
 	}

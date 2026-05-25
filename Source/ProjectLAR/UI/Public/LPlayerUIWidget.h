@@ -7,6 +7,7 @@
 class UProgressBar;
 class UTextBlock;
 class UImage;
+class UMaterialInstanceDynamic;
 class ALPlayerCharacterBase;
 
 UCLASS()
@@ -18,6 +19,7 @@ public:
 	void SetObservedCharacter(ALPlayerCharacterBase* InCharacter);
 
 protected:
+	virtual void NativeConstruct() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 protected:
@@ -27,14 +29,89 @@ protected:
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UProgressBar> PB_PlayerMP;
 
-	// 대쉬 쿨타임 표시용. WBP에 직접 추가할 예정.
+	// =========================
+	// Dash Cooldown UI
+	// =========================
+
 	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UProgressBar> PB_DashCooldown;
+	TObjectPtr<UImage> IMG_DashIcon;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UImage> IMG_DashCooldownRadial;
 
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> TXT_DashCooldown;
 
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> DashCooldownMaterial;
+
+	// =========================
+	// Q Skill Cooldown UI
+	// =========================
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UImage> IMG_QCooldownRadial;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> TXT_QCooldown;
+
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> QCooldownMaterial;
+
+	// =========================
+	// W Skill Cooldown UI
+	// =========================
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UImage> IMG_WCooldownRadial;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> TXT_WCooldown;
+
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> WCooldownMaterial;
+
+	// =========================
+	// E Skill Cooldown UI
+	// =========================
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UImage> IMG_ECooldownRadial;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> TXT_ECooldown;
+
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> ECooldownMaterial;
+
+	// =========================
+	// R Skill Cooldown UI
+	// =========================
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UImage> IMG_RCooldownRadial;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> TXT_RCooldown;
+
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> RCooldownMaterial;
+
 private:
 	UPROPERTY()
 	TObjectPtr<ALPlayerCharacterBase> ObservedCharacter;
+
+private:
+	UMaterialInstanceDynamic* InitCooldownImage(UImage* CooldownImage);
+
+	void InitCooldownText(UTextBlock* CooldownText);
+
+	void UpdateCooldownUI(
+		UImage* CooldownImage,
+		UMaterialInstanceDynamic* CooldownMaterial,
+		UTextBlock* CooldownText,
+		bool bOnCooldown,
+		float Remaining,
+		float Ratio
+	);
 };

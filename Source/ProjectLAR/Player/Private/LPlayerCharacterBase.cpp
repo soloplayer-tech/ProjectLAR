@@ -209,7 +209,12 @@ bool ALPlayerCharacterBase::IsDashing() const
 
 bool ALPlayerCharacterBase::IsDashOnCooldown() const
 {
-	return !bCanDash;
+	if (!GetWorld())
+	{
+		return false;
+	}
+
+	return GetWorldTimerManager().IsTimerActive(DashCooldownTimerHandle);
 }
 
 float ALPlayerCharacterBase::GetDashCooldownRemaining() const

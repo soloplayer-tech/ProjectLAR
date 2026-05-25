@@ -5,13 +5,15 @@
 #include "CoreMinimal.h"
 #include "LPlayerCharacterBase.h"
 #include "LPlayerSkillSlot.h"
+#include "TimerManager.h"
+
 #include "ProjectLAR/Skill/Public/LIceLanceActor.h"
 #include "LMeteorActor.h"
 #include "LThunderActor.h"
+
 #include "LPlayerCharacter.generated.h"
 
 class UNiagaraSystem;
-class ALMeteorActor;
 
 UCLASS()
 class PROJECTLAR_API ALPlayerCharacter : public ALPlayerCharacterBase
@@ -28,27 +30,54 @@ public:
 	virtual void CancelCurrentAction() override;
 	
 	void UseSkill(ELPlayerSkillSlot SkillSlot, const FVector& TargetLocation);
+
+	// Skill Cooldown
+	bool CanUseSkillSlot(ELPlayerSkillSlot SkillSlot) const;
+
+	bool IsSkillOnCooldown(ELPlayerSkillSlot SkillSlot) const;
+	float GetSkillCooldownRemaining(ELPlayerSkillSlot SkillSlot) const;
+	float GetSkillCooldownRatio(ELPlayerSkillSlot SkillSlot) const;
 	
 protected:
 	void EndBasicAttack();
+	void EndSkill();
+	void EndBlink();
+
+	// 스킬 함수는 성공 여부를 반환한다.
+	bool UseQSkill(const FVector& TargetLocation);
+	bool UseWSkill(const FVector& TargetLocation);
+	bool UseESkill(const FVector& TargetLocation);
+	bool UseRSkill(const FVector& TargetLocation);
+	bool UseVSkill(const FVector& TargetLocation);
+
+	// Cooldown
+	void StartSkillCooldown(ELPlayerSkillSlot SkillSlot);
+	float GetSkillCooldownDuration(ELPlayerSkillSlot SkillSlot) const;
+
+	void ResetQSkillCooldown();
+	void ResetWSkillCooldown();
+	void ResetESkillCooldown();
+	void ResetRSkillCooldown();
+	void ResetVSkillCooldown();
 	
-	void UseQSkill(const FVector& TargetLocation);
-	void UseWSkill(const FVector& TargetLocation);
-	void UseESkill(const FVector& TargetLocation);
-	void UseRSkill(const FVector& TargetLocation);
-	void UseVSkill(const FVector& TargetLocation);
+protected:
+	// =======================================================================================
+	// Basic Attack
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack")
 	TObjectPtr<UNiagaraSystem> BasicAttackNiagara;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack")
-	float BasicAttackDuration = 1.f;
+	float BasicAttackDuration = 1.0f;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack")
-	float BasicAttackForwardOffset = 80.f;
+	float BasicAttackForwardOffset = 80.0f;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack")
-	float BasicAttackHeightOffset = 0.f;
+	float BasicAttackHeightOffset = 0.0f;
+
+	// =======================================================================================
+	// Dash Blink
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Dash|Blink")
 	float BlinkDuration = 0.2f;
@@ -60,23 +89,15 @@ protected:
 	TObjectPtr<UNiagaraSystem> BlinkEndEffect;
 
 	// =======================================================================================
-
-	
-	/*UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Skill|Q")
-	TObjectPtr<UNiagaraSystem> QMeteorNiagara;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Skill|Q")
-	float QMeteorDuration = 0.7f;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Skill|Q")
-	float QMeteorSpawnHeight = 1000.f;*/
+	// Q Skill - Meteor
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Q")
 	TSubclassOf<ALMeteorActor> MeteorActorClass;
 
+	// 행동 잠금 시간: Q 사용 후 캐릭터가 Skill 상태로 묶이는 시간
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Q")
 	float QSkillLockDuration = 0.5f;
-	
+
 	// =======================================================================================
 	// W Skill - Bezier Ice Lance
 
@@ -89,42 +110,34 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
 	float IceLanceTravelDuration = 0.45f;
 
-	// 준비 위치: 캐릭터 뒤쪽으로 얼마나 띄울지
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
 	float IceLanceReadyBackOffset = 70.0f;
 
-	// 준비 위치: 좌우 간격
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
 	float IceLanceReadySideSpacing = 110.0f;
 
-	// 준비 위치: 기본 높이
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
 	float IceLanceReadyHeight = 180.0f;
 
-	// 가운데 창을 살짝 더 높게 만드는 값
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
 	float IceLanceReadyHeightFalloff = 25.0f;
 
-	// 베지어 곡선이 좌우로 휘는 정도
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
 	float IceLanceCurveSideOffset = 180.0f;
 
-	// 베지어 곡선이 위로 솟는 정도
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
 	float IceLanceCurveHeightOffset = 120.0f;
 
-	// 목표 지점에 꽂히는 높이
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
 	float IceLanceEndHeightOffset = 60.0f;
 
-	// 생성 후 발사까지의 준비 시간
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
 	float IceLanceReadyDuration = 0.18f;
 
-	// 발사 시간차
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
 	float IceLanceFireInterval = 0.05f;
 
+	// 행동 잠금 시간
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|W")
 	float WSkillLockDuration = 0.35f;
 	
@@ -132,22 +145,18 @@ protected:
 	TObjectPtr<UNiagaraSystem> WIceLanceNiagara;
 	
 	// =======================================================================================
-	
-	/*UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|E")
-	TObjectPtr<UNiagaraSystem> EThunderNiagara;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Skill|E")
-	float EThunderDuration = 0.7f;*/
+	// E Skill - Thunder
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|E")
 	TSubclassOf<ALThunderActor> ThunderStormActorClass;
 	
+	// 행동 잠금 시간
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|E")
 	float ESkillLockDuration = 0.45f;
 	
 	// =======================================================================================
+	// R Skill - Wind
 
-protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|R")
 	TObjectPtr<UNiagaraSystem> RWindNiagara;
 
@@ -157,19 +166,39 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|R")
 	float RWindHeightOffset = 60.0f;
 
+	// 행동 잠금 시간
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|R")
 	float RSkillLockDuration = 0.35f;
+
+	// =======================================================================================
+	// Skill Cooldown - 재사용 대기시간
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Cooldown")
+	float QSkillCooldown = 3.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Cooldown")
+	float WSkillCooldown = 4.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Cooldown")
+	float ESkillCooldown = 5.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Cooldown")
+	float RSkillCooldown = 2.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Cooldown")
+	float VSkillCooldown = 10.0f;
 	
 private:
 	FTimerHandle BasicAttackTimerHandle;
-	
 	FTimerHandle BlinkTimerHandle;
-	
+
+	// 현재 스킬 행동 잠금용 공용 타이머
 	FTimerHandle SkillTimerHandle;
-	
-	void EndSkill();
-	void EndBlink();
-	
-	
-	
+
+	// 스킬별 재사용 쿨타임 타이머
+	FTimerHandle QSkillCooldownTimerHandle;
+	FTimerHandle WSkillCooldownTimerHandle;
+	FTimerHandle ESkillCooldownTimerHandle;
+	FTimerHandle RSkillCooldownTimerHandle;
+	FTimerHandle VSkillCooldownTimerHandle;
 };

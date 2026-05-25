@@ -56,7 +56,7 @@ protected:
 	float DashDuration = 0.15f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Dash")
-	float DashCooldown = 10.f;
+	float DashCooldown = 2.f;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Movement|Dash")
 	bool bIsDashing = false;
