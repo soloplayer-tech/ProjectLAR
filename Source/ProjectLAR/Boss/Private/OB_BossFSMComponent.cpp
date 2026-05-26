@@ -47,7 +47,7 @@ void UOB_BossFSMComponent::OnEnterState(EBossBattleState BossState)
 	{
 	case EBossBattleState::	IDLE:		if (OwnerController) OwnerController -> StopMovement(); break;
 	case EBossBattleState::	MOVE:		if (OwnerController) {OwnerController -> StartMove(); } break;
-	case EBossBattleState::	ATTACK:		break;
+	case EBossBattleState::	ATTACK:		if (OwnerController) {/* TODO: Attack Pattern */} break;
 	case EBossBattleState::	STUNNED:	break;	
 	}
 }

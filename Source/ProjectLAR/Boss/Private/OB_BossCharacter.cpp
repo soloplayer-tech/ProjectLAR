@@ -4,6 +4,7 @@
 #include "OB_BossCharacter.h"
 #include "OB_BossFSMComponent.h"
 #include "OB_LogManager.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 // Sets default values
 AOB_BossCharacter::AOB_BossCharacter()
@@ -17,6 +18,10 @@ AOB_BossCharacter::AOB_BossCharacter()
 	
 	// AutoPossessAI로 컨트롤러 자동 연결
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+	
+	GetCharacterMovement() -> bOrientRotationToMovement = true;
+	GetCharacterMovement() -> RotationRate = FRotator(0.0f, 360.0f, 0.0f); // 초당 회전 속도
+	bUseControllerRotationYaw = false;
 }
 
 // Called when the game starts or when spawned

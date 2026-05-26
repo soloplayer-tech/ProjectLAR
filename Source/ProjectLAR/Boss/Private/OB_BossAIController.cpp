@@ -122,7 +122,14 @@ void AOB_BossAIController::StartMove()
 {
 	LOG_TRACE_INFO(TEXT("Call StartMove"));
 	
-	switch (MoveToActor(FSMComp->GetTargetActor(), AcceptanceRadius))
+	FAIMoveRequest MoveRequest;
+	MoveRequest.SetGoalActor(FSMComp->GetTargetActor());
+	MoveRequest.SetAcceptanceRadius(AcceptanceRadius);
+	MoveRequest.SetCanStrafe(false);
+	
+	FPathFollowingRequestResult  MoveResult = MoveTo(MoveRequest);
+	
+	switch (MoveResult.Code.GetValue())
 	{
 	case EPathFollowingRequestResult::AlreadyAtGoal:
 		FSMComp -> SetState(EBossBattleState::ATTACK);
