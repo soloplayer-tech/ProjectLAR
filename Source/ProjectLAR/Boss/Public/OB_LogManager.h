@@ -17,7 +17,6 @@ DECLARE_LOG_CATEGORY_EXTERN(LogGameplay, Log, All);
 #define LOG_TRACE_WARN(Format, ...) UE_LOG(LogIntegrated, Warning, TEXT("[%s::%d] " Format), *FString(__FUNCTION__), __LINE__, ##__VA_ARGS__)
 #define LOG_TRACE_ERROR(Format, ...) UE_LOG(LogIntegrated, Error, TEXT("[%s::%d] " Format), *FString(__FUNCTION__), __LINE__, ##__VA_ARGS__)
 
-
 // 확장을 위해 생성 - 비워둠.
 class OB_LogManager
 {
