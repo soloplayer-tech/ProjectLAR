@@ -2,24 +2,22 @@
 
 #pragma once
 
+#include "CoreMinimal.h"
 #include "AIController.h"
 #include "Perception/AIPerceptionTypes.h"
-#include "OB_BossAIContoller.generated.h"
+#include "OB_BossAIController.generated.h"
 
 class UOB_BossFSMComponent;
 class AOB_BossCharacter;
 
 UCLASS()
-class PROJECTLAR_API AOB_BossAIContoller : public AAIController
+class PROJECTLAR_API AOB_BossAIController : public AAIController
 {
 	GENERATED_BODY()
-	
-	UPROPERTY()
-	TObjectPtr<AActor> TargetActor = nullptr;
 
 public:
 	// Sets default values for this actor's properties
-	AOB_BossAIContoller();
+	AOB_BossAIController();
 
 	/** MoveToActor 변수 설명 인용 
 	 *  @brief Makes AI go toward specified Dest location, aborts any active path following
@@ -31,28 +29,30 @@ public:
 	TObjectPtr<AOB_BossCharacter> BossCharacter;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BossControl")
-	UOB_BossFSMComponent* FSMComp;
+UOB_BossFSMComponent* FSMComp;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BossControl")
-	float AcceptanceRadius;
+	float AcceptanceRadius = 100.f;
 	
 	UPROPERTY(VisibleAnywhere)
 	UAIPerceptionComponent* PerceptionComp;
+	
+	FTimerHandle LoseSightTimer;
+	FTimerHandle ChaseTimer;
 
 	UFUNCTION()
 	void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
 	
 	UFUNCTION()
-	void StartMove(AActor* Target);
+	void StartMove();
 	
-	UFUNCTION()
-	AActor* GetTargetActor() const { return TargetActor; }
+	// void OnMoveCompleted(FAIRequestID RequestID,  EPathFollowingResult::Type Result) override;
 	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	
-	void OnPossess(APawn* InPawn) override; // 원본이 protected이기 때문에 protected안에 선언
+	virtual void OnPossess(APawn* InPawn) override; // 원본이 protected이기 때문에 protected안에 선언
 
 public:
 	// Called every frame

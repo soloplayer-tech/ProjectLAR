@@ -2,6 +2,8 @@
 
 
 #include "OB_BossFSMComponent.h"
+#include "OB_BossAIController.h"
+#include "OB_BossCharacter.h"
 
 #include "OB_LogManager.h"
 
@@ -17,14 +19,6 @@ UOB_BossFSMComponent::UOB_BossFSMComponent()
 	// ...
 }
 
-// Called when the game starts
-void UOB_BossFSMComponent::BeginPlay()
-{
-	Super::BeginPlay();
-
-	// ...
-	
-}
 
 // Called every frame
 void UOB_BossFSMComponent::TickComponent(float DeltaTime, ELevelTick TickType,
@@ -32,19 +26,13 @@ void UOB_BossFSMComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// ...
-}
-
-
-void UOB_BossFSMComponent::SetState(EBossBattleState NewState)
-{
-	if (CurAIState == NewState) return;
-	// OnExitState(CurAIState); // TODO: ExitState로 상태 해제 관리할 요소가 없어 주석 -> 향후 추가 시 내용 재정의
+	Boss = Cast<AOB_BossCharacter>(GetOwner());
 	
-	LOG_TRACE_INFO(TEXT("[ Set Current State : %s]"), *UEnum::GetValueAsString(CurAIState));
-
-	CurAIState = NewState;
-	OnEnterState(CurAIState);
+	if (Boss)
+	{
+		OwnerController = Cast<AOB_BossAIController>(Boss->GetController());
+	}
+	// ...
 }
 
 // 상태 진입 시 행동 정의 
@@ -57,12 +45,45 @@ void UOB_BossFSMComponent::OnEnterState(EBossBattleState BossState)
 	
 	switch (BossState)
 	{
-	case EBossBattleState::	IDLE:		if (OwnerController) OwnerController -> StopMovement(); 
-		break;
-	case EBossBattleState::	MOVE:		if (OwnerController) OwnerController -> StartMove( OwnerController -> GetTargetActor() );  
-		break;
+	case EBossBattleState::	IDLE:		if (OwnerController) OwnerController -> StopMovement(); break;
+	case EBossBattleState::	MOVE:		if (OwnerController) {OwnerController -> StartMove(); } break;
 	case EBossBattleState::	ATTACK:		break;
-	case EBossBattleState::	STUNNED:	break;
+	case EBossBattleState::	STUNNED:	break;	
 	}
+}
+
+void UOB_BossFSMComponent::BeginPlay()
+{
+	Super::BeginPlay();
+}
+
+void UOB_BossFSMComponent::SetState(EBossBattleState NewState)
+{
+	if (CurAIState == NewState) return;
+	// OnExitState(CurAIState); // TODO : ExitState로 상태 해제 관리할 요소가 없어 주석 -> 향후 추가 시 내용 재정의
+	
+	CurAIState = NewState;
+	
+	LOG_TRACE_INFO(TEXT("[ Set Current State : %s]"), *UEnum::GetValueAsString(CurAIState));
+	
+	OnEnterState(CurAIState);
+}
+
+void UOB_BossFSMComponent::SetOwnerController(AOB_BossAIController* Controller)
+{
+	if (OwnerController == Controller) return;
+	
+	OwnerController = Controller;
+	
+	LOG_TRACE_INFO("[ Set OwnerController : %s]", *OwnerController->GetName());
+}
+
+void UOB_BossFSMComponent::SetTargetActor(AActor* Actor)
+{
+	if (Actor == nullptr) { LOG_TRACE_WARN(TEXT("Actor is nullptr")); return; }
+	
+	Target = Actor;
+	
+	LOG_TRACE_INFO(TEXT("[ Set Target : %s]"), *Target->GetName());
 }
 
