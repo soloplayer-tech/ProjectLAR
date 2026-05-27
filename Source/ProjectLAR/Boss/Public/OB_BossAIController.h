@@ -32,7 +32,7 @@ public:
 UOB_BossFSMComponent* FSMComp;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BossControl")
-	float AcceptanceRadius = 100.f;
+	float AcceptanceRadius = 200.f;
 	
 	UPROPERTY(VisibleAnywhere)
 	UAIPerceptionComponent* PerceptionComp;
