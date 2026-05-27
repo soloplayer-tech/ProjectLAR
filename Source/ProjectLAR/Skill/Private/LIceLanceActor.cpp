@@ -2,6 +2,9 @@
 
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/BoxComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "ProjectLAR/Combat/Public/LDamageable.h"
 
 ALIceLanceActor::ALIceLanceActor()
 {
@@ -16,6 +19,11 @@ ALIceLanceActor::ALIceLanceActor()
 	// 지금은 이동용 액터만 만들 것이므로
 	// 충돌은 나중에 데미지 구현할 때 붙여도 됨
 	IceLanceMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	
+	DamageCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("DamageCollision"));
+	DamageCollision->SetupAttachment(RootScene);
+	
+	
 }
 
 void ALIceLanceActor::BeginPlay()
@@ -126,5 +134,14 @@ FVector ALIceLanceActor::GetQuadraticBezierPoint(float T) const
 		OneMinusT * OneMinusT * StartPoint
 		+ 2.0f * OneMinusT * T * ControlPoint
 		+ T * T * EndPoint;
+}
+
+void ALIceLanceActor::OnDamageCollisionBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+}
+
+void ALIceLanceActor::ApplyDamageToActor(AActor* TargetActor)
+{
 }
 

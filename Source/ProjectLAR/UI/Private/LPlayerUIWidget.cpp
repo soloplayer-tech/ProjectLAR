@@ -1,6 +1,7 @@
 #include "ProjectLAR/UI/Public/LPlayerUIWidget.h"
 
 #include "Components/Image.h"
+#include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "ProjectLAR/Player/Public/LPlayerCharacter.h"
@@ -40,6 +41,24 @@ void ULPlayerUIWidget::NativeConstruct()
 	// R
 	RCooldownMaterial = InitCooldownImage(IMG_RCooldownRadial.Get());
 	InitCooldownText(TXT_RCooldown.Get());
+	
+	if (PB_CastProgress)
+	{
+		PB_CastProgress->SetVisibility(ESlateVisibility::Collapsed);
+		PB_CastProgress->SetPercent(0.0f);
+	}
+	
+	if (TXT_CastName)
+	{
+		TXT_CastName->SetVisibility(ESlateVisibility::Collapsed);
+		TXT_CastName->SetText(FText::GetEmpty());
+	}
+	
+	if (TXT_CastRemaining)
+	{
+		TXT_CastRemaining->SetVisibility(ESlateVisibility::Collapsed);
+		TXT_CastRemaining->SetText(FText::GetEmpty());
+	}
 }
 
 void ULPlayerUIWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
@@ -88,45 +107,39 @@ void ULPlayerUIWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 		return;
 	}
 
-	// Q
-	UpdateCooldownUI(
+	// Q Slot
+	UpdateSkillSlotCooldownUI(
+		ELPlayerSkillSlot::Q,
 		IMG_QCooldownRadial.Get(),
 		QCooldownMaterial.Get(),
-		TXT_QCooldown.Get(),
-		PlayerCharacter->IsSkillOnCooldown(ELPlayerSkillSlot::Q),
-		PlayerCharacter->GetSkillCooldownRemaining(ELPlayerSkillSlot::Q),
-		PlayerCharacter->GetSkillCooldownRatio(ELPlayerSkillSlot::Q)
+		TXT_QCooldown.Get()
 	);
 
-	// W
-	UpdateCooldownUI(
+	// W Slot
+	UpdateSkillSlotCooldownUI(
+		ELPlayerSkillSlot::W,
 		IMG_WCooldownRadial.Get(),
 		WCooldownMaterial.Get(),
-		TXT_WCooldown.Get(),
-		PlayerCharacter->IsSkillOnCooldown(ELPlayerSkillSlot::W),
-		PlayerCharacter->GetSkillCooldownRemaining(ELPlayerSkillSlot::W),
-		PlayerCharacter->GetSkillCooldownRatio(ELPlayerSkillSlot::W)
+		TXT_WCooldown.Get()
 	);
 
-	// E
-	UpdateCooldownUI(
+	// E Slot
+	UpdateSkillSlotCooldownUI(
+		ELPlayerSkillSlot::E,
 		IMG_ECooldownRadial.Get(),
 		ECooldownMaterial.Get(),
-		TXT_ECooldown.Get(),
-		PlayerCharacter->IsSkillOnCooldown(ELPlayerSkillSlot::E),
-		PlayerCharacter->GetSkillCooldownRemaining(ELPlayerSkillSlot::E),
-		PlayerCharacter->GetSkillCooldownRatio(ELPlayerSkillSlot::E)
+		TXT_ECooldown.Get()
 	);
 
-	// R
-	UpdateCooldownUI(
+	// R Slot
+	UpdateSkillSlotCooldownUI(
+		ELPlayerSkillSlot::R,
 		IMG_RCooldownRadial.Get(),
 		RCooldownMaterial.Get(),
-		TXT_RCooldown.Get(),
-		PlayerCharacter->IsSkillOnCooldown(ELPlayerSkillSlot::R),
-		PlayerCharacter->GetSkillCooldownRemaining(ELPlayerSkillSlot::R),
-		PlayerCharacter->GetSkillCooldownRatio(ELPlayerSkillSlot::R)
+		TXT_RCooldown.Get()
 	);
+	
+	UpdateCastBarUI();
 }
 
 UMaterialInstanceDynamic* ULPlayerUIWidget::InitCooldownImage(UImage* CooldownImage)
@@ -204,6 +217,132 @@ void ULPlayerUIWidget::UpdateCooldownUI(
 		{
 			CooldownText->SetVisibility(ESlateVisibility::Collapsed);
 			CooldownText->SetText(FText::GetEmpty());
+		}
+	}
+}
+
+void ULPlayerUIWidget::UpdateSkillSlotCooldownUI(
+	ELPlayerSkillSlot SkillSlot,
+	UImage* CooldownImage,
+	UMaterialInstanceDynamic* CooldownMaterial,
+	UTextBlock* CooldownText
+)
+{
+	ALPlayerCharacter* PlayerCharacter =
+		Cast<ALPlayerCharacter>(ObservedCharacter);
+
+	if (!PlayerCharacter)
+	{
+		return;
+	}
+
+	const ELPlayerSkillID SkillID =
+		PlayerCharacter->GetEquippedSkillID(SkillSlot);
+
+	const bool bOnCooldown =
+		PlayerCharacter->IsSkillIDOnCooldown(SkillID);
+
+	const float Remaining =
+		PlayerCharacter->GetSkillIDCooldownRemaining(SkillID);
+
+	const float Ratio =
+		PlayerCharacter->GetSkillIDCooldownRatio(SkillID);
+
+	UpdateCooldownUI(
+		CooldownImage,
+		CooldownMaterial,
+		CooldownText,
+		bOnCooldown,
+		Remaining,
+		Ratio
+	);
+}
+
+void ULPlayerUIWidget::UpdateCastBarUI()
+{
+	ALPlayerCharacter* PlayerCharacter =
+		Cast<ALPlayerCharacter>(ObservedCharacter);
+
+	if (!PlayerCharacter)
+	{
+		return;
+	}
+
+	const bool bCasting = PlayerCharacter->IsCasting();
+
+	if (PB_CastProgress)
+	{
+		PB_CastProgress->SetVisibility(
+			bCasting
+				? ESlateVisibility::Visible
+				: ESlateVisibility::Collapsed
+		);
+
+		PB_CastProgress->SetPercent(
+			bCasting ? PlayerCharacter->GetCastRatio() : 0.0f
+		);
+	}
+
+	if (TXT_CastName)
+	{
+		TXT_CastName->SetVisibility(
+			bCasting
+				? ESlateVisibility::Visible
+				: ESlateVisibility::Collapsed
+		);
+
+		if (bCasting)
+		{
+			const ELPlayerSkillID CastingSkillID =
+				PlayerCharacter->GetCastingSkillID();
+
+			FString SkillName = TEXT("");
+
+			switch (CastingSkillID)
+			{
+			case ELPlayerSkillID::Meteor:
+				SkillName = TEXT("Meteor");
+				break;
+
+			case ELPlayerSkillID::Thunder:
+				SkillName = TEXT("Thunder");
+				break;
+
+			default:
+				SkillName = TEXT("Casting");
+				break;
+			}
+
+			TXT_CastName->SetText(FText::FromString(SkillName));
+		}
+		else
+		{
+			TXT_CastName->SetText(FText::GetEmpty());
+		}
+	}
+
+	if (TXT_CastRemaining)
+	{
+		TXT_CastRemaining->SetVisibility(
+			bCasting
+				? ESlateVisibility::Visible
+				: ESlateVisibility::Collapsed
+		);
+
+		if (bCasting)
+		{
+			TXT_CastRemaining->SetText(
+				FText::FromString(
+					FString::Printf(
+						TEXT("%.1f"),
+						PlayerCharacter->GetCastRemaining()
+					)
+				)
+			);
+		}
+		else
+		{
+			TXT_CastRemaining->SetText(FText::GetEmpty());
 		}
 	}
 }

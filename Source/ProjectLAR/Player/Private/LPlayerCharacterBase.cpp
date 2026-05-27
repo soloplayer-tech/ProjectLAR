@@ -181,8 +181,9 @@ void ALPlayerCharacterBase::SetCurrentActionState(ELPlayerActionState NewState)
 
 bool ALPlayerCharacterBase::CanMove() const
 {
-	return CurrentActionState == ELPlayerActionState::Idle;
-	// 기본 상태에서만 이동 가능
+	return CurrentActionState == ELPlayerActionState::Idle 
+		|| CurrentActionState == ELPlayerActionState::Casting;
+	// 기본 상태 + 캐스팅 시전시간에만 에서만 이동 가능
 }
 
 bool ALPlayerCharacterBase::CanBasicAttack() const
@@ -197,7 +198,8 @@ bool ALPlayerCharacterBase::CanDash() const
 	&& (
 		CurrentActionState == ELPlayerActionState::Idle	
 		|| CurrentActionState == ELPlayerActionState::BasicAttack
-		|| CurrentActionState == ELPlayerActionState::Skill 
+		|| CurrentActionState == ELPlayerActionState::Skill
+		|| CurrentActionState == ELPlayerActionState::Casting
 		);
 	// 기본 상태 + 기본 공격 + 스킬 상태 중에도 대쉬 가능
 }

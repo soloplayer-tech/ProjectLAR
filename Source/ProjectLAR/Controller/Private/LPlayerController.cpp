@@ -188,10 +188,14 @@ void ALPlayerController::MoveToMouseCursor()
 		return;
 	}
 
-	// 공격/스킬 등 행동 중이면 우클릭 이동 금지
 	if (!PlayerCharacter->CanMove())
 	{
 		return;
+	}
+
+	if (PlayerCharacter->GetCurrentActionState() == ELPlayerActionState::Casting)
+	{
+		PlayerCharacter->CancelCurrentAction();
 	}
 
 	FVector TargetLocation;

@@ -4,8 +4,8 @@
 #include "GameFramework/Actor.h"
 #include "LIceLanceActor.generated.h"
 
-class USceneComponent;
 class UStaticMeshComponent;
+class UBoxComponent;
 
 UCLASS()
 class PROJECTLAR_API ALIceLanceActor : public AActor
@@ -33,13 +33,31 @@ protected:
 	// 2차 베지어 곡선 위치 계산
 	FVector GetQuadraticBezierPoint(float T) const;
 
+	// 데미지 충돌 처리
+	UFUNCTION()
+	void OnDamageCollisionBeginOverlap(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex,
+		bool bFromSweep,
+		const FHitResult& SweepResult
+	);
+
+	void ApplyDamageToActor(AActor* TargetActor);
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USceneComponent> RootScene;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> IceLanceMesh;
-	
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UBoxComponent> DamageCollision;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Damage")
+	float IceLanceDamage = 20.0f;
 
 private:
 	FVector StartPoint;
@@ -58,11 +76,14 @@ private:
 	// 현재 대기 경과 시간
 	float WaitElapsedTime = 0.0f;
 
-	// 경로 정보가 들어왔는가
+	// 경로 정보가 들어왔는가?
 	bool bPathInitialized = false;
 
 	// 지금 실제로 날아가는 중인가?
 	bool bIsFlying = false;
+
 	
-	
+	// 액터가 데미지를 줬는가를 판단
+	UPROPERTY()
+	TArray<TObjectPtr<AActor>> DamagedActors;
 };

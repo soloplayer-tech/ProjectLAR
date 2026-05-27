@@ -3,7 +3,6 @@
 #include "LPlayerCharacter.h"
 
 #include "NiagaraFunctionLibrary.h"
-#include "NiagaraSystem.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "ProjectLAR/Skill/Public/LIceLanceActor.h"
 
@@ -142,85 +141,99 @@ void ALPlayerCharacter::EndSkill()
 }
 
 // =======================================================================================
-// Skill Cooldown
+// Skill Cooldown - SkillID 기준
 
 bool ALPlayerCharacter::CanUseSkillSlot(ELPlayerSkillSlot SkillSlot) const
 {
+	const ELPlayerSkillID EquippedSkillID = GetEquippedSkillID(SkillSlot);
+
+	return CanUseSkillID(EquippedSkillID);
+}
+
+bool ALPlayerCharacter::CanUseSkillID(ELPlayerSkillID SkillID) const
+{
+	if (SkillID == ELPlayerSkillID::None)
+	{
+		return false;
+	}
+
 	return CanUseSkill()
-		&& !IsSkillOnCooldown(SkillSlot);
+		&& !IsSkillIDOnCooldown(SkillID);
 }
 
-bool ALPlayerCharacter::IsSkillOnCooldown(ELPlayerSkillSlot SkillSlot) const
+bool ALPlayerCharacter::IsSkillIDOnCooldown(ELPlayerSkillID SkillID) const
 {
 	if (!GetWorld())
 	{
 		return false;
 	}
 
-	switch (SkillSlot)
+	switch (SkillID)
 	{
-	case ELPlayerSkillSlot::Q:
-		return GetWorldTimerManager().IsTimerActive(QSkillCooldownTimerHandle);
+	case ELPlayerSkillID::Meteor:
+		return GetWorldTimerManager().IsTimerActive(MeteorCooldownTimerHandle);
 
-	case ELPlayerSkillSlot::W:
-		return GetWorldTimerManager().IsTimerActive(WSkillCooldownTimerHandle);
+	case ELPlayerSkillID::IceLance:
+		return GetWorldTimerManager().IsTimerActive(IceLanceCooldownTimerHandle);
 
-	case ELPlayerSkillSlot::E:
-		return GetWorldTimerManager().IsTimerActive(ESkillCooldownTimerHandle);
+	case ELPlayerSkillID::Thunder:
+		return GetWorldTimerManager().IsTimerActive(ThunderCooldownTimerHandle);
 
-	case ELPlayerSkillSlot::R:
-		return GetWorldTimerManager().IsTimerActive(RSkillCooldownTimerHandle);
+	case ELPlayerSkillID::Wind:
+		return GetWorldTimerManager().IsTimerActive(WindCooldownTimerHandle);
 
-	case ELPlayerSkillSlot::V:
-		return GetWorldTimerManager().IsTimerActive(VSkillCooldownTimerHandle);
+	case ELPlayerSkillID::MeteorRain:
+		return GetWorldTimerManager().IsTimerActive(MeteorRainCooldownTimerHandle);
 
+	case ELPlayerSkillID::None:
 	default:
 		return false;
 	}
 }
 
-float ALPlayerCharacter::GetSkillCooldownRemaining(ELPlayerSkillSlot SkillSlot) const
+float ALPlayerCharacter::GetSkillIDCooldownRemaining(ELPlayerSkillID SkillID) const
 {
 	if (!GetWorld())
 	{
 		return 0.0f;
 	}
 
-	switch (SkillSlot)
+	switch (SkillID)
 	{
-	case ELPlayerSkillSlot::Q:
-		return GetWorldTimerManager().IsTimerActive(QSkillCooldownTimerHandle)
-			? FMath::Max(0.0f, GetWorldTimerManager().GetTimerRemaining(QSkillCooldownTimerHandle))
+	case ELPlayerSkillID::Meteor:
+		return GetWorldTimerManager().IsTimerActive(MeteorCooldownTimerHandle)
+			? FMath::Max(0.0f, GetWorldTimerManager().GetTimerRemaining(MeteorCooldownTimerHandle))
 			: 0.0f;
 
-	case ELPlayerSkillSlot::W:
-		return GetWorldTimerManager().IsTimerActive(WSkillCooldownTimerHandle)
-			? FMath::Max(0.0f, GetWorldTimerManager().GetTimerRemaining(WSkillCooldownTimerHandle))
+	case ELPlayerSkillID::IceLance:
+		return GetWorldTimerManager().IsTimerActive(IceLanceCooldownTimerHandle)
+			? FMath::Max(0.0f, GetWorldTimerManager().GetTimerRemaining(IceLanceCooldownTimerHandle))
 			: 0.0f;
 
-	case ELPlayerSkillSlot::E:
-		return GetWorldTimerManager().IsTimerActive(ESkillCooldownTimerHandle)
-			? FMath::Max(0.0f, GetWorldTimerManager().GetTimerRemaining(ESkillCooldownTimerHandle))
+	case ELPlayerSkillID::Thunder:
+		return GetWorldTimerManager().IsTimerActive(ThunderCooldownTimerHandle)
+			? FMath::Max(0.0f, GetWorldTimerManager().GetTimerRemaining(ThunderCooldownTimerHandle))
 			: 0.0f;
 
-	case ELPlayerSkillSlot::R:
-		return GetWorldTimerManager().IsTimerActive(RSkillCooldownTimerHandle)
-			? FMath::Max(0.0f, GetWorldTimerManager().GetTimerRemaining(RSkillCooldownTimerHandle))
+	case ELPlayerSkillID::Wind:
+		return GetWorldTimerManager().IsTimerActive(WindCooldownTimerHandle)
+			? FMath::Max(0.0f, GetWorldTimerManager().GetTimerRemaining(WindCooldownTimerHandle))
 			: 0.0f;
 
-	case ELPlayerSkillSlot::V:
-		return GetWorldTimerManager().IsTimerActive(VSkillCooldownTimerHandle)
-			? FMath::Max(0.0f, GetWorldTimerManager().GetTimerRemaining(VSkillCooldownTimerHandle))
+	case ELPlayerSkillID::MeteorRain:
+		return GetWorldTimerManager().IsTimerActive(MeteorRainCooldownTimerHandle)
+			? FMath::Max(0.0f, GetWorldTimerManager().GetTimerRemaining(MeteorRainCooldownTimerHandle))
 			: 0.0f;
 
+	case ELPlayerSkillID::None:
 	default:
 		return 0.0f;
 	}
 }
 
-float ALPlayerCharacter::GetSkillCooldownRatio(ELPlayerSkillSlot SkillSlot) const
+float ALPlayerCharacter::GetSkillIDCooldownRatio(ELPlayerSkillID SkillID) const
 {
-	const float CooldownDuration = GetSkillCooldownDuration(SkillSlot);
+	const float CooldownDuration = GetSkillCooldownDuration(SkillID);
 
 	if (CooldownDuration <= 0.0f)
 	{
@@ -228,130 +241,478 @@ float ALPlayerCharacter::GetSkillCooldownRatio(ELPlayerSkillSlot SkillSlot) cons
 	}
 
 	return FMath::Clamp(
-		GetSkillCooldownRemaining(SkillSlot) / CooldownDuration,
+		GetSkillIDCooldownRemaining(SkillID) / CooldownDuration,
 		0.0f,
 		1.0f
 	);
 }
 
-float ALPlayerCharacter::GetSkillCooldownDuration(ELPlayerSkillSlot SkillSlot) const
+float ALPlayerCharacter::GetSkillCooldownDuration(ELPlayerSkillID SkillID) const
 {
-	switch (SkillSlot)
+	switch (SkillID)
 	{
-	case ELPlayerSkillSlot::Q:
-		return QSkillCooldown;
+	case ELPlayerSkillID::Meteor:
+		return MeteorCooldown;
 
-	case ELPlayerSkillSlot::W:
-		return WSkillCooldown;
+	case ELPlayerSkillID::IceLance:
+		return IceLanceCooldown;
 
-	case ELPlayerSkillSlot::E:
-		return ESkillCooldown;
+	case ELPlayerSkillID::Thunder:
+		return ThunderCooldown;
 
-	case ELPlayerSkillSlot::R:
-		return RSkillCooldown;
+	case ELPlayerSkillID::Wind:
+		return WindCooldown;
 
-	case ELPlayerSkillSlot::V:
-		return VSkillCooldown;
+	case ELPlayerSkillID::MeteorRain:
+		return MeteorRainCooldown;
 
+	case ELPlayerSkillID::None:
 	default:
 		return 0.0f;
 	}
 }
 
-void ALPlayerCharacter::StartSkillCooldown(ELPlayerSkillSlot SkillSlot)
+void ALPlayerCharacter::StartSkillCooldown(ELPlayerSkillID SkillID)
 {
 	if (!GetWorld())
 	{
 		return;
 	}
 
-	const float CooldownDuration = GetSkillCooldownDuration(SkillSlot);
+	const float CooldownDuration = GetSkillCooldownDuration(SkillID);
 
 	if (CooldownDuration <= 0.0f)
 	{
 		return;
 	}
 
+	switch (SkillID)
+	{
+	case ELPlayerSkillID::Meteor:
+		GetWorldTimerManager().ClearTimer(MeteorCooldownTimerHandle);
+		GetWorldTimerManager().SetTimer(
+			MeteorCooldownTimerHandle,
+			this,
+			&ALPlayerCharacter::ResetMeteorCooldown,
+			CooldownDuration,
+			false
+		);
+		break;
+
+	case ELPlayerSkillID::IceLance:
+		GetWorldTimerManager().ClearTimer(IceLanceCooldownTimerHandle);
+		GetWorldTimerManager().SetTimer(
+			IceLanceCooldownTimerHandle,
+			this,
+			&ALPlayerCharacter::ResetIceLanceCooldown,
+			CooldownDuration,
+			false
+		);
+		break;
+
+	case ELPlayerSkillID::Thunder:
+		GetWorldTimerManager().ClearTimer(ThunderCooldownTimerHandle);
+		GetWorldTimerManager().SetTimer(
+			ThunderCooldownTimerHandle,
+			this,
+			&ALPlayerCharacter::ResetThunderCooldown,
+			CooldownDuration,
+			false
+		);
+		break;
+
+	case ELPlayerSkillID::Wind:
+		GetWorldTimerManager().ClearTimer(WindCooldownTimerHandle);
+		GetWorldTimerManager().SetTimer(
+			WindCooldownTimerHandle,
+			this,
+			&ALPlayerCharacter::ResetWindCooldown,
+			CooldownDuration,
+			false
+		);
+		break;
+
+	case ELPlayerSkillID::MeteorRain:
+		GetWorldTimerManager().ClearTimer(MeteorRainCooldownTimerHandle);
+		GetWorldTimerManager().SetTimer(
+			MeteorRainCooldownTimerHandle,
+			this,
+			&ALPlayerCharacter::ResetMeteorRainCooldown,
+			CooldownDuration,
+			false
+		);
+		break;
+
+	case ELPlayerSkillID::None:
+	default:
+		break;
+	}
+
+	UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("Skill Cooldown Start: %s / %.1f"),
+		*UEnum::GetValueAsString(SkillID),
+		CooldownDuration
+	);
+}
+
+void ALPlayerCharacter::ResetMeteorCooldown()
+{
+}
+
+void ALPlayerCharacter::ResetIceLanceCooldown()
+{
+}
+
+void ALPlayerCharacter::ResetThunderCooldown()
+{
+}
+
+void ALPlayerCharacter::ResetWindCooldown()
+{
+}
+
+void ALPlayerCharacter::ResetMeteorRainCooldown()
+{
+}
+
+// =======================================================================================
+// Skill Equip
+
+ELPlayerSkillID ALPlayerCharacter::GetEquippedSkillID(ELPlayerSkillSlot SkillSlot) const
+{
 	switch (SkillSlot)
 	{
 	case ELPlayerSkillSlot::Q:
-		GetWorldTimerManager().ClearTimer(QSkillCooldownTimerHandle);
-		GetWorldTimerManager().SetTimer(
-			QSkillCooldownTimerHandle,
-			this,
-			&ALPlayerCharacter::ResetQSkillCooldown,
-			CooldownDuration,
-			false
-		);
-		break;
+		return QSlotSkill;
 
 	case ELPlayerSkillSlot::W:
-		GetWorldTimerManager().ClearTimer(WSkillCooldownTimerHandle);
-		GetWorldTimerManager().SetTimer(
-			WSkillCooldownTimerHandle,
-			this,
-			&ALPlayerCharacter::ResetWSkillCooldown,
-			CooldownDuration,
-			false
-		);
-		break;
+		return WSlotSkill;
 
 	case ELPlayerSkillSlot::E:
-		GetWorldTimerManager().ClearTimer(ESkillCooldownTimerHandle);
-		GetWorldTimerManager().SetTimer(
-			ESkillCooldownTimerHandle,
-			this,
-			&ALPlayerCharacter::ResetESkillCooldown,
-			CooldownDuration,
-			false
-		);
-		break;
+		return ESlotSkill;
 
 	case ELPlayerSkillSlot::R:
-		GetWorldTimerManager().ClearTimer(RSkillCooldownTimerHandle);
-		GetWorldTimerManager().SetTimer(
-			RSkillCooldownTimerHandle,
-			this,
-			&ALPlayerCharacter::ResetRSkillCooldown,
-			CooldownDuration,
-			false
-		);
-		break;
+		return RSlotSkill;
 
 	case ELPlayerSkillSlot::V:
-		GetWorldTimerManager().ClearTimer(VSkillCooldownTimerHandle);
-		GetWorldTimerManager().SetTimer(
-			VSkillCooldownTimerHandle,
-			this,
-			&ALPlayerCharacter::ResetVSkillCooldown,
-			CooldownDuration,
-			false
-		);
-		break;
+		return VSlotSkill;
 
+	default:
+		return ELPlayerSkillID::None;
+	}
+}
+
+void ALPlayerCharacter::SetEquippedSkillID(
+	ELPlayerSkillSlot SkillSlot,
+	ELPlayerSkillID SkillID)
+{
+	switch (SkillSlot)
+	{
+	case ELPlayerSkillSlot::Q:
+		QSlotSkill = SkillID;
+		break;
+		
+	case ELPlayerSkillSlot::W:
+		WSlotSkill = SkillID;
+		break;
+		
+	case ELPlayerSkillSlot::E:
+		ESlotSkill = SkillID;
+		break;
+		
+	case ELPlayerSkillSlot::R:
+		RSlotSkill = SkillID;
+		break;
+		
+	case ELPlayerSkillSlot::V:
+		VSlotSkill = SkillID;
+		break;
+		
 	default:
 		break;
 	}
 }
 
-void ALPlayerCharacter::ResetQSkillCooldown()
+bool ALPlayerCharacter::ExecuteSkillByID(
+	ELPlayerSkillID SkillID,
+	const FVector& TargetLocation)
 {
+	switch (SkillID)
+	{
+	case ELPlayerSkillID::Meteor:
+		return UseQSkill(TargetLocation);
+		
+	case ELPlayerSkillID::IceLance:
+		return UseWSkill(TargetLocation);
+		
+	case ELPlayerSkillID::Thunder:
+		return UseESkill(TargetLocation);
+		
+	case ELPlayerSkillID::Wind:
+		return UseRSkill(TargetLocation);
+		
+	case ELPlayerSkillID::MeteorRain:
+		return UseVSkill(TargetLocation);
+
+	case ELPlayerSkillID::None:
+	default:
+		return false;
+	}
 }
 
-void ALPlayerCharacter::ResetWSkillCooldown()
+// =======================================================================================
+// Skill Casting
+
+bool ALPlayerCharacter::IsCasting() const
 {
+	return bIsCasting;
 }
 
-void ALPlayerCharacter::ResetESkillCooldown()
+ELPlayerSkillID ALPlayerCharacter::GetCastingSkillID() const
 {
+	return CastingSkillID;
 }
 
-void ALPlayerCharacter::ResetRSkillCooldown()
+bool ALPlayerCharacter::DoesSkillNeedCasting(ELPlayerSkillID SkillID) const
 {
+	switch (SkillID)
+	{
+	case ELPlayerSkillID::Meteor:
+	case ELPlayerSkillID::Thunder:
+		return true;
+
+	default:
+		return false;
+	}
 }
 
-void ALPlayerCharacter::ResetVSkillCooldown()
+float ALPlayerCharacter::GetSkillCastDuration(ELPlayerSkillID SkillID) const
 {
+	switch (SkillID)
+	{
+	case ELPlayerSkillID::Meteor:
+		return MeteorCastDuration;
+
+	case ELPlayerSkillID::Thunder:
+		return ThunderCastDuration;
+
+	default:
+		return 0.0f;
+	}
+}
+
+// ======================================================================================
+// 스킬 캐스팅 시작할 때 나이아가라 시작 / 스킬 발동 후는 아님
+
+void ALPlayerCharacter::SpawnCastStartEffect(
+	ELPlayerSkillID SkillID,
+	const FVector& TargetLocation
+)
+{
+	UNiagaraSystem* CastStartEffect = nullptr;
+	FVector SpawnLocation = FVector::ZeroVector;
+	FRotator SpawnRotation = FRotator::ZeroRotator;
+
+	switch (SkillID)
+	{
+	case ELPlayerSkillID::Meteor:
+		// 메테오 캐스팅 이펙트는 플레이어 발밑
+		CastStartEffect = MeteorCastStartEffect;
+		SpawnLocation = GetActorLocation();
+		SpawnLocation.Z += MeteorCastEffectHeightOffset;
+		SpawnRotation = GetActorRotation();
+		break;
+
+	case ELPlayerSkillID::Thunder:
+		// 썬더 캐스팅 이펙트는 마우스 위치
+		CastStartEffect = ThunderCastStartEffect;
+		SpawnLocation = TargetLocation;
+		SpawnLocation.Z += ThunderCastEffectHeightOffset;
+		SpawnRotation = FRotator::ZeroRotator;
+		break;
+
+	default:
+		break;
+	}
+
+	if (!CastStartEffect)
+	{
+		return;
+	}
+
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		GetWorld(),
+		CastStartEffect,
+		SpawnLocation,
+		SpawnRotation
+	);
+}
+
+void ALPlayerCharacter::StartSkillCast(
+	ELPlayerSkillSlot SkillSlot,
+	ELPlayerSkillID SkillID,
+	const FVector& TargetLocation
+)
+{
+	const float CastDuration = GetSkillCastDuration(SkillID);
+
+	if (CastDuration <= 0.0f)
+	{
+		const bool bSkillSucceeded =
+			ExecuteSkillByID(SkillID, TargetLocation);
+
+		if (bSkillSucceeded)
+		{
+			StartSkillCooldown(SkillID);
+		}
+
+		return;
+	}
+	
+	
+	// 캐스팅 시작 시 기존 이동은 멈춘다.
+	// 이후 우클릭 이동을 새로 입력하면 캐스팅이 취소되고 이동한다.
+	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
+	{
+		MovementComp->StopMovementImmediately();
+	}
+
+	// 캐스팅 방향으로 캐릭터 회전
+	FVector CastDirection = TargetLocation - GetActorLocation();
+	CastDirection.Z = 0.0f;
+
+	if (!CastDirection.IsNearlyZero())
+	{
+		CastDirection.Normalize();
+
+		const FRotator CastRotation = CastDirection.Rotation();
+
+		SetActorRotation(
+			FRotator(
+				0.0f,
+				CastRotation.Yaw,
+				0.0f
+			)
+		);
+	}
+
+	bIsCasting = true;
+	CastingSkillSlot = SkillSlot;
+	CastingSkillID = SkillID;
+	CastingTargetLocation = TargetLocation;
+	CurrentCastDuration = CastDuration;
+
+	SetCurrentActionState(ELPlayerActionState::Casting);
+
+	SpawnCastStartEffect(SkillID, TargetLocation);
+	
+	GetWorldTimerManager().ClearTimer(CastTimerHandle);
+
+	GetWorldTimerManager().SetTimer(
+		CastTimerHandle,
+		this,
+		&ALPlayerCharacter::FinishSkillCast,
+		CastDuration,
+		false
+	);
+
+	UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("Casting Start: %s / %.2f"),
+		*UEnum::GetValueAsString(SkillID),
+		CastDuration
+	);
+}
+
+void ALPlayerCharacter::FinishSkillCast()
+{
+	if (!bIsCasting)
+	{
+		return;
+	}
+
+	const ELPlayerSkillID FinishedSkillID = CastingSkillID;
+	const FVector FinishedTargetLocation = CastingTargetLocation;
+
+	bIsCasting = false;
+	CastingSkillID = ELPlayerSkillID::None;
+	CurrentCastDuration = 0.0f;
+
+	GetWorldTimerManager().ClearTimer(CastTimerHandle);
+
+	// 실제 스킬 함수가 Skill 상태를 다시 잡을 수 있게 일단 Idle로 돌린다.
+	SetCurrentActionState(ELPlayerActionState::Idle);
+
+	const bool bSkillSucceeded =
+		ExecuteSkillByID(FinishedSkillID, FinishedTargetLocation);
+
+	if (bSkillSucceeded)
+	{
+		StartSkillCooldown(FinishedSkillID);
+	}
+
+	UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("Casting Finish: %s"),
+		*UEnum::GetValueAsString(FinishedSkillID)
+	);
+}
+
+void ALPlayerCharacter::CancelSkillCast()
+{
+	if (!bIsCasting)
+	{
+		return;
+	}
+
+	bIsCasting = false;
+	CastingSkillID = ELPlayerSkillID::None;
+	CurrentCastDuration = 0.0f;
+
+	GetWorldTimerManager().ClearTimer(CastTimerHandle);
+
+	if (GetCurrentActionState() == ELPlayerActionState::Casting)
+	{
+		SetCurrentActionState(ELPlayerActionState::Idle);
+	}
+}
+
+float ALPlayerCharacter::GetCastRemaining() const
+{
+	if (!GetWorld())
+	{
+		return 0.0f;
+	}
+
+	if (!GetWorldTimerManager().IsTimerActive(CastTimerHandle))
+	{
+		return 0.0f;
+	}
+
+	return FMath::Max(
+		0.0f,
+		GetWorldTimerManager().GetTimerRemaining(CastTimerHandle)
+	);
+}
+
+float ALPlayerCharacter::GetCastRatio() const
+{
+	if (!bIsCasting || CurrentCastDuration <= 0.0f)
+	{
+		return 0.0f;
+	}
+
+	const float Remaining = GetCastRemaining();
+
+	return FMath::Clamp(
+		1.0f - Remaining / CurrentCastDuration,
+		0.0f,
+		1.0f
+	);
 }
 
 // =======================================================================================
@@ -361,42 +722,36 @@ void ALPlayerCharacter::UseSkill(
 	ELPlayerSkillSlot SkillSlot,
 	const FVector& TargetLocation)
 {
-	if (!CanUseSkillSlot(SkillSlot))
+	const ELPlayerSkillID EquippedSkillID =
+		GetEquippedSkillID(SkillSlot);
+	
+	if (EquippedSkillID == ELPlayerSkillID::None)
+	{
+		return;
+	}
+	
+	if (!CanUseSkillID(EquippedSkillID))
 	{
 		return;
 	}
 
-	bool bSkillSucceeded = false;
-
-	switch (SkillSlot)
+	if (DoesSkillNeedCasting(EquippedSkillID))
 	{
-	case ELPlayerSkillSlot::Q:
-		bSkillSucceeded = UseQSkill(TargetLocation);
-		break;
-		
-	case ELPlayerSkillSlot::W:
-		bSkillSucceeded = UseWSkill(TargetLocation);
-		break;
-		
-	case ELPlayerSkillSlot::E:
-		bSkillSucceeded = UseESkill(TargetLocation);
-		break;
-		
-	case ELPlayerSkillSlot::R:
-		bSkillSucceeded = UseRSkill(TargetLocation);
-		break;
-		
-	case ELPlayerSkillSlot::V:
-		bSkillSucceeded = UseVSkill(TargetLocation);
-		break;
+		StartSkillCast(
+			SkillSlot,
+			EquippedSkillID,
+			TargetLocation
+		);
 
-	default:
-		break;
+		return;
 	}
-
+	
+	const bool bSkillSucceeded =
+		ExecuteSkillByID(EquippedSkillID, TargetLocation);
+	
 	if (bSkillSucceeded)
 	{
-		StartSkillCooldown(SkillSlot);
+		StartSkillCooldown(EquippedSkillID);
 	}
 }
 
@@ -460,7 +815,7 @@ bool ALPlayerCharacter::UseQSkill(const FVector& TargetLocation)
 		SkillTimerHandle,
 		this,
 		&ALPlayerCharacter::EndSkill,
-		QSkillLockDuration,
+		MeteorSkillLockDuration,
 		false
 	);
 
@@ -576,7 +931,7 @@ bool ALPlayerCharacter::UseWSkill(const FVector& TargetLocation)
 		SkillTimerHandle,
 		this,
 		&ALPlayerCharacter::EndSkill,
-		WSkillLockDuration,
+		IceLanceSkillLockDuration,
 		false
 	);
 
@@ -642,7 +997,7 @@ bool ALPlayerCharacter::UseESkill(const FVector& TargetLocation)
 		SkillTimerHandle,
 		this,
 		&ALPlayerCharacter::EndSkill,
-		ESkillLockDuration,
+		ThunderSkillLockDuration,
 		false
 	);
 
@@ -685,9 +1040,9 @@ bool ALPlayerCharacter::UseRSkill(const FVector& TargetLocation)
 
 	FVector SpawnLocation =
 		GetActorLocation()
-		+ AttackDirection * RWindForwardOffset;
+		+ AttackDirection * WindForwardOffset;
 
-	SpawnLocation.Z += RWindHeightOffset;
+	SpawnLocation.Z += WindHeightOffset;
 
 	UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 		GetWorld(),
@@ -702,7 +1057,7 @@ bool ALPlayerCharacter::UseRSkill(const FVector& TargetLocation)
 		SkillTimerHandle,
 		this,
 		&ALPlayerCharacter::EndSkill,
-		RSkillLockDuration,
+		WindSkillLockDuration,
 		false
 	);
 
@@ -711,13 +1066,15 @@ bool ALPlayerCharacter::UseRSkill(const FVector& TargetLocation)
 
 bool ALPlayerCharacter::UseVSkill(const FVector& TargetLocation)
 {
-	// 아직 V 스킬 구현 전이므로 실패 처리.
+	// 아직 MeteorRain 구현 전이므로 실패 처리.
 	// false를 반환해야 V를 눌러도 쿨타임이 돌지 않는다.
 	return false;
 }
 
 void ALPlayerCharacter::CancelCurrentAction()
 {
+	CancelSkillCast();
+
 	GetWorldTimerManager().ClearTimer(BasicAttackTimerHandle);
 	GetWorldTimerManager().ClearTimer(SkillTimerHandle);
 	

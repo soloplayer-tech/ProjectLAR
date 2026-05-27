@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "ProjectLAR/Player/Public/LPlayerSkillSlot.h"
 #include "LPlayerUIWidget.generated.h"
 
 class UProgressBar;
@@ -96,12 +97,24 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<UMaterialInstanceDynamic> RCooldownMaterial;
+	
+	// =========================
+	// Cast Bar UI
+	// =========================
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UProgressBar> PB_CastProgress;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> TXT_CastName;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> TXT_CastRemaining;
 
 private:
 	UPROPERTY()
 	TObjectPtr<ALPlayerCharacterBase> ObservedCharacter;
-
-private:
+	
 	UMaterialInstanceDynamic* InitCooldownImage(UImage* CooldownImage);
 
 	void InitCooldownText(UTextBlock* CooldownText);
@@ -114,4 +127,13 @@ private:
 		float Remaining,
 		float Ratio
 	);
+
+	void UpdateSkillSlotCooldownUI(
+		ELPlayerSkillSlot SkillSlot,
+		UImage* CooldownImage,
+		UMaterialInstanceDynamic* CooldownMaterial,
+		UTextBlock* CooldownText
+	);
+	
+	void UpdateCastBarUI();
 };
