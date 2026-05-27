@@ -35,7 +35,9 @@ public class ProjectLAR : ModuleRules
 			System.IO.Path.Combine(ModuleDirectory, "Boss/Public"),
 			System.IO.Path.Combine(ModuleDirectory, "Player/Public"),
 			System.IO.Path.Combine(ModuleDirectory, "Controller/Public"),
-			System.IO.Path.Combine(ModuleDirectory, "GameMode/Public")
+			System.IO.Path.Combine(ModuleDirectory, "GameMode/Public"),
+			System.IO.Path.Combine(ModuleDirectory, "Skill/Public"),
+			System.IO.Path.Combine(ModuleDirectory, "UI/Public")
 			
 		});
 		// Uncomment if you are using Slate UI
