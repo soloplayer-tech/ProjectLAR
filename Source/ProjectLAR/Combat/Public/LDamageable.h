@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "ProjectLAR/Player/Public/LPlayerSkillSlot.h"
+#include "LPlayerSkillID.h"
 #include "LDamageable.generated.h"
 
 UINTERFACE(BlueprintType)
@@ -14,12 +14,12 @@ class PROJECTLAR_API ULDamageable : public UInterface
 class PROJECTLAR_API ILDamageable
 {
 	GENERATED_BODY()
-	
+
 public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Damage")
 	void ReceiveSkillDamage(
 		float Damage,
 		AActor* DamageCauser,
-		ELPlayerSkillSlot SkillID
-		);
+		ELPlayerSkillID SkillID
+	);
 };

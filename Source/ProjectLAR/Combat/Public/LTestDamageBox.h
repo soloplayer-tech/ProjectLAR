@@ -23,9 +23,10 @@ protected:
 	
 public:
 	virtual void ReceiveSkillDamage_Implementation(
-		float Damage,
-		AActor* DamageCauser,
-		ELPlayerSkillSlot SkillID) override;
+	float Damage,
+	AActor* DamageCauser,
+	ELPlayerSkillID SkillID
+	) override;
 	
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")

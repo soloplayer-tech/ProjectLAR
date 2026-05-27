@@ -28,7 +28,11 @@ void ALTestDamageBox::BeginPlay()
 	CurHP = MaxHP;
 }
 
-void ALTestDamageBox::ReceiveSkillDamage_Implementation(float Damage, AActor* DamageCauser, ELPlayerSkillSlot SkillID)
+void ALTestDamageBox::ReceiveSkillDamage_Implementation(
+	float Damage,
+	AActor* DamageCauser,
+	ELPlayerSkillID SkillID
+)
 {
 	if (CurHP <= 0.0f)
 	{
