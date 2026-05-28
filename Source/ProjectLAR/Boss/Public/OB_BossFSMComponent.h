@@ -49,7 +49,7 @@ public:
 	EBossBattleState GetCurState() const { return CurAIState; }
 	
 	void SetAttackPattern();
-	void OnEnterAtkPattern(EAttackState AttackPattern);
+	void OnEnterAtkPattern( EAttackState AttackPattern );
 
 protected:
 	// Called when the game starts

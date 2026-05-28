@@ -75,21 +75,21 @@ void UOB_BossFSMComponent::SetAttackPattern()
 	
 	int32 RandNum = FMath::RandRange(0, 3);
 	
-	EAttackState CutAtkPattern = EAttackState::HAMMER;
+	EAttackState CurAtkPattern = EAttackState::HAMMER;
 	
 	switch (RandNum)
 	{
-		case 0: CutAtkPattern = EAttackState::HAMMER;		break;
-		case 1: CutAtkPattern = EAttackState::RUSH;			break;
-		case 2: CutAtkPattern = EAttackState::SLAM;			break;
-		case 3: CutAtkPattern = EAttackState::CARD;			break;
-		
+		case 0: CurAtkPattern = EAttackState::HAMMER;		break;
+		case 1: CurAtkPattern = EAttackState::RUSH;			break;
+		case 2: CurAtkPattern = EAttackState::SLAM;			break;
+		case 3: CurAtkPattern = EAttackState::CARD;			break;
+	
 		default:											break;
 	}
 	
-	LOG_TRACE_INFO(TEXT("[Set Current State : %s"), *UEnum::GetValueAsString(CutAtkPattern));
+	LOG_TRACE_INFO(TEXT("[Set Current State : %s"), *UEnum::GetValueAsString(CurAtkPattern));
 	
-	// TODO: OnEnterAtkPattern 개발
+	OnEnterAtkPattern(CurAtkPattern);
 }
 
 void UOB_BossFSMComponent::SetState(EBossBattleState NewState)
