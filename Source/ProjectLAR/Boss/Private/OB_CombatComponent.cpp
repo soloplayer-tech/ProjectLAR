@@ -12,6 +12,17 @@ UOB_CombatComponent::UOB_CombatComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 
 	// ...
+	CurHP = MaxHP;
+}
+
+void UOB_CombatComponent::TakeDamage(float DamageAmount)
+{
+	CurHP = FMath::Max(0.f, CurHP - DamageAmount);
+	
+	if (CurHP <= 0.0f)
+	{
+		// TODO : Die 상태로 변경하는 로직
+	}
 }
 
 
