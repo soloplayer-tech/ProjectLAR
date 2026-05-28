@@ -17,6 +17,7 @@ class PROJECTLAR_API ALGameMode : public AGameMode
 public:
 	ALGameMode();
 	
+protected:
 	virtual void BeginPlay() override;
 	
 };
