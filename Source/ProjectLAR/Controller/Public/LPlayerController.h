@@ -9,6 +9,7 @@
 
 class UInputMappingContext;
 class UInputAction;
+class ULPlayerUIWidget;
 
 UCLASS()
 class PROJECTLAR_API ALPlayerController : public APlayerController
@@ -21,6 +22,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
+	virtual void OnPossess(APawn* InPawn) override;
 	
 private:
 	UPROPERTY(EditAnywhere, Category = "Input")
@@ -47,6 +49,14 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Skill")
 	TObjectPtr<UInputAction> SkillRAction;
 	
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<ULPlayerUIWidget> PlayerUIWidgetClass;
+	
+	UPROPERTY()
+	TObjectPtr<ULPlayerUIWidget> PlayerUIWidget;
+	
+	void CreatePlayerUIWidget();
+	
 
 	void MoveToMouseCursor();
 	void DashInput();
@@ -60,4 +70,6 @@ private:
 	void SkillRInput();
 	
 	void HandleSkillInput(ELPlayerSkillSlot SkillSlot);
+	
+	void BindPlayerUIToPawn(APawn* InPawn);
 };
