@@ -1,7 +1,8 @@
 #include "ProjectLAR/Combat/Public/LTestDamageBox.h"
-
+#include "ProjectLAR/UI/Public/LFloatingDamageActor.h"
 #include "LPlayerSkillID.h"
 #include "Components/BoxComponent.h"
+
 #include "Components/StaticMeshComponent.h"
 
 ALTestDamageBox::ALTestDamageBox()
@@ -41,7 +42,29 @@ void ALTestDamageBox::ReceiveSkillDamage_Implementation(
 
 	CurHP -= Damage;
 	CurHP = FMath::Max(0.0f, CurHP);
+	
+	if (FloatingDamageActorClass)
+	{
+		FVector SpawnLocation = GetActorLocation();
+		SpawnLocation.Z += FloatingDamageHeightOffset;
 
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+
+		ALFloatingDamageActor* FloatingDamageActor =
+			GetWorld()->SpawnActor<ALFloatingDamageActor>(
+				FloatingDamageActorClass,
+				SpawnLocation,
+				FRotator::ZeroRotator,
+				SpawnParams
+			);
+
+		if (FloatingDamageActor)
+		{
+			FloatingDamageActor->InitializeFloatingDamage(Damage);
+		}
+	}
+	
 	UE_LOG(
 		LogTemp,
 		Warning,

@@ -30,6 +30,14 @@ private:
 	void Impact();
 	
 protected:
+
+	// 착탄 순간 범위 데미지
+	void ApplyImpactDamage();
+
+	// 실제 데미지 적용
+	void ApplyDamageToActor(AActor* TargetActor);
+	
+protected:
 	UPROPERTY(EditAnywhere,BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USceneComponent> RootScene;
 	
@@ -48,6 +56,19 @@ protected:
 	UPROPERTY(EditAnywhere,BlueprintReadOnly, Category = "Meteor")
 	float FallDuration = 1.f;
 	
+	// =========================
+	// Damage
+	// =========================
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Meteor|Damage")
+	float MeteorDamage = 50.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Meteor|Damage")
+	float ImpactDamageRadius = 220.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Meteor|Debug")
+	bool bDrawImpactDebug = true;
+	
 private:
 	FVector StartLocation;
 	FVector ImpactLocation;
@@ -57,6 +78,6 @@ private:
 	
 	UPROPERTY()
 	TObjectPtr<UNiagaraComponent> WarningNiagaraComp;
-
-
+	
+	bool bImpactHandled = false;
 };

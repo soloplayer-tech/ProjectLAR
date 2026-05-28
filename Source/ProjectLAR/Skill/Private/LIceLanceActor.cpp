@@ -161,8 +161,8 @@ void ALIceLanceActor::ApplyImpactDamage()
 			World,
 			ImpactLocation,
 			ImpactDamageRadius,
-			16,
-			FColor::Cyan,
+			32,
+			FColor::Red,
 			false,
 			1.0f
 		);

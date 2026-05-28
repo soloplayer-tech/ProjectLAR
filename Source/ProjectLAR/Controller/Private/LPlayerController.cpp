@@ -11,6 +11,8 @@
 #include "ProjectLAR/Player/Public/LPlayerCharacter.h"
 #include "ProjectLAR/Player/Public/LPlayerCharacterBase.h"
 
+#define ECC_SkillTarget ECC_GameTraceChannel1
+
 ALPlayerController::ALPlayerController()
 {
 	// 마우스 커서 보이게 만들기
@@ -281,7 +283,7 @@ bool ALPlayerController::GetMouseWorldLocation(FVector& OutWorldLocation) const
 {
 	FHitResult HitResult;
 	
-	const bool bHit = GetHitResultUnderCursor(ECC_Visibility, false, HitResult);
+	const bool bHit = GetHitResultUnderCursor(ECC_SkillTarget, false, HitResult);
 	
 	if (!bHit)
 	{

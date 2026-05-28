@@ -20,10 +20,18 @@ public:
 public:
 	void InitializeThunderStorm(const FVector& InCenterLocation);
 	
+
+	
 private:
 	void SpawnThunderStrike();
 
 protected:
+	// 착뢰 순간 범위 데미지
+	void ApplyThunderStrikeDamage(const FVector& StrikeLocation);
+
+	// 실제 데미지 적용
+	void ApplyDamageToActor(AActor* TargetActor);
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category= "Component")
 	TObjectPtr<USceneComponent> RootScene;
 	
@@ -41,6 +49,15 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category= "Thunder")
 	float StrikeHeightOffset = 0.f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Thunder|Damage")
+	float ThunderDamage = 15.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Thunder|Damage")
+	float ThunderDamageRadius = 140.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Thunder|Debug")
+	bool bDrawThunderDamageDebug = true;
 	
 private:
 	FVector CenterLocation;

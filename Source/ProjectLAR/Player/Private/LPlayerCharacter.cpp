@@ -4,6 +4,11 @@
 
 #include "NiagaraFunctionLibrary.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "DrawDebugHelpers.h"
+#include "Engine/World.h"
+#include "Engine/EngineTypes.h"
+#include "Engine/OverlapResult.h"
+#include "ProjectLAR/Combat/Public/LDamageable.h"
 #include "ProjectLAR/Skill/Public/LIceLanceActor.h"
 
 ALPlayerCharacter::ALPlayerCharacter()
@@ -118,6 +123,8 @@ void ALPlayerCharacter::BasicAttack(const FVector& TargetLocation)
 			AttackRotation
 		);
 	}
+	
+	ApplyBasicAttackDamage(AttackDirection);
 	
 	GetWorldTimerManager().ClearTimer(BasicAttackTimerHandle);
 
@@ -681,6 +688,218 @@ void ALPlayerCharacter::CancelSkillCast()
 	}
 }
 
+void ALPlayerCharacter::ApplyBasicAttackDamage(const FVector& AttackDirection)
+{
+	UWorld* World = GetWorld();
+
+	if (!World)
+	{
+		return;
+	}
+
+	FVector NormalizedDirection = AttackDirection;
+	NormalizedDirection.Z = 0.0f;
+
+	if (!NormalizedDirection.Normalize())
+	{
+		return;
+	}
+
+	const FRotator DamageRotation = NormalizedDirection.Rotation();
+
+	FVector DamageCenter =
+		GetActorLocation()
+		+ NormalizedDirection * BasicAttackDamageCenterOffset;
+
+	DamageCenter.Z += BasicAttackDamageHeightOffset;
+
+	if (bDrawBasicAttackDamageDebug)
+	{
+		DrawDebugBox(
+			World,
+			DamageCenter,
+			BasicAttackDamageBoxHalfExtent,
+			DamageRotation.Quaternion(),
+			FColor::Yellow,
+			false,
+			1.0f
+		);
+	}
+
+	TArray<FOverlapResult> OverlapResults;
+
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+
+	const bool bHit = World->OverlapMultiByObjectType(
+		OverlapResults,
+		DamageCenter,
+		DamageRotation.Quaternion(),
+		ObjectQueryParams,
+		FCollisionShape::MakeBox(BasicAttackDamageBoxHalfExtent),
+		QueryParams
+	);
+
+	if (!bHit)
+	{
+		return;
+	}
+
+	TArray<AActor*> DamagedActors;
+
+	for (const FOverlapResult& Result : OverlapResults)
+	{
+		AActor* HitActor = Result.GetActor();
+
+		if (!HitActor)
+		{
+			continue;
+		}
+
+		if (DamagedActors.Contains(HitActor))
+		{
+			continue;
+		}
+
+		DamagedActors.Add(HitActor);
+
+		ApplySkillDamageToActor(
+			HitActor,
+			BasicAttackDamage,
+			ELPlayerSkillID::BasicAttack
+		);
+	}
+}
+
+void ALPlayerCharacter::ApplyWindDamage(const FVector& AttackDirection)
+{
+	UWorld* World = GetWorld();
+
+	if (!World)
+	{
+		return;
+	}
+
+	FVector NormalizedDirection = AttackDirection;
+	NormalizedDirection.Z = 0.0f;
+
+	if (!NormalizedDirection.Normalize())
+	{
+		return;
+	}
+
+	const FRotator DamageRotation = NormalizedDirection.Rotation();
+
+	FVector DamageCenter =
+		GetActorLocation()
+		+ NormalizedDirection * WindDamageCenterOffset;
+
+	DamageCenter.Z += WindDamageHeightOffset;
+
+	if (bDrawWindDamageDebug)
+	{
+		DrawDebugBox(
+			World,
+			DamageCenter,
+			WindDamageBoxHalfExtent,
+			DamageRotation.Quaternion(),
+			FColor::Red,
+			false,
+			1.0f
+		);
+	}
+
+	TArray<FOverlapResult> OverlapResults;
+
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
+	
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+
+	const bool bHit = World->OverlapMultiByObjectType(
+		OverlapResults,
+		DamageCenter,
+		DamageRotation.Quaternion(),
+		ObjectQueryParams,
+		FCollisionShape::MakeBox(WindDamageBoxHalfExtent),
+		QueryParams
+	);
+
+	if (!bHit)
+	{
+		return;
+	}
+
+	TArray<AActor*> DamagedActors;
+
+	for (const FOverlapResult& Result : OverlapResults)
+	{
+		AActor* HitActor = Result.GetActor();
+
+		if (!HitActor)
+		{
+			continue;
+		}
+
+		if (DamagedActors.Contains(HitActor))
+		{
+			continue;
+		}
+
+		DamagedActors.Add(HitActor);
+
+		ApplySkillDamageToActor(
+			HitActor,
+			WindDamage,
+			ELPlayerSkillID::Wind
+		);
+	}
+}
+
+void ALPlayerCharacter::ApplySkillDamageToActor(
+	AActor* TargetActor,
+	float Damage,
+	ELPlayerSkillID SkillID
+)
+{
+	if (!TargetActor)
+	{
+		return;
+	}
+
+	if (TargetActor == this)
+	{
+		return;
+	}
+
+	if (!TargetActor->GetClass()->ImplementsInterface(ULDamageable::StaticClass()))
+	{
+		return;
+	}
+
+	ILDamageable::Execute_ReceiveSkillDamage(
+		TargetActor,
+		Damage,
+		this,
+		SkillID
+	);
+
+	UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("Skill Damage Applied: %s / Skill: %s / Damage: %.1f"),
+		*TargetActor->GetName(),
+		*UEnum::GetValueAsString(SkillID),
+		Damage
+	);
+}
+
 float ALPlayerCharacter::GetCastRemaining() const
 {
 	if (!GetWorld())
@@ -1050,7 +1269,9 @@ bool ALPlayerCharacter::UseRSkill(const FVector& TargetLocation)
 		SpawnLocation,
 		AttackRotation
 	);
-
+	
+	ApplyWindDamage(AttackDirection);
+	
 	GetWorldTimerManager().ClearTimer(SkillTimerHandle);
 
 	GetWorldTimerManager().SetTimer(

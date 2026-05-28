@@ -117,6 +117,12 @@ protected:
 		const FVector& TargetLocation
 		);
 	
+	void ApplySkillDamageToActor(
+	AActor* TargetActor,
+	float Damage,
+	ELPlayerSkillID SkillID
+	);
+	
 	void FinishSkillCast();
 	void CancelSkillCast();
 	
@@ -155,11 +161,32 @@ protected:
 	float BasicAttackDuration = 1.0f;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack")
-	float BasicAttackForwardOffset = 80.0f;
+	float BasicAttackForwardOffset = 180.0f;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack")
 	float BasicAttackHeightOffset = 0.0f;
 
+	// =======================================================================================
+	// Basic Attack Damage
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack|Damage")
+	float BasicAttackDamage = 10.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack|Damage")
+	float BasicAttackDamageCenterOffset = 180.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack|Damage")
+	float BasicAttackDamageHeightOffset = 50.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack|Damage")
+	FVector BasicAttackDamageBoxHalfExtent = FVector(280.0f, 80.0f, 80.0f);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack|Debug")
+	bool bDrawBasicAttackDamageDebug = true;
+	
+	void ApplyBasicAttackDamage(const FVector& AttackDirection);
+	
+	
 	// =======================================================================================
 	// Dash Blink
 	
@@ -254,6 +281,26 @@ protected:
 	// 행동 잠금 시간
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Wind")
 	float WindSkillLockDuration = 0.35f;
+	
+	void ApplyWindDamage(const FVector& AttackDirection);
+	
+	// =======================================================================================
+	// Wind Damage
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Wind|Damage")
+	float WindDamage = 15.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Wind|Damage")
+	float WindDamageCenterOffset = 260.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Wind|Damage")
+	float WindDamageHeightOffset = 60.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Wind|Damage")
+	FVector WindDamageBoxHalfExtent = FVector(260.0f, 120.0f, 80.0f);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Wind|Debug")
+	bool bDrawWindDamageDebug = true;
 
 	// =======================================================================================
 	// Skill Cooldown - 실제 스킬 기준 재사용 대기시간

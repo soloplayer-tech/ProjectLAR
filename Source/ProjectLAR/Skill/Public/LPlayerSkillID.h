@@ -7,6 +7,7 @@ UENUM(BlueprintType)
 enum class ELPlayerSkillID : uint8
 {
 	None			UMETA(DisplayName = "None"),
+	BasicAttack		UMETA(DisplayName = "Basic Attack"),
 	MeteorRain		UMETA(DisplayName="MeteorRain"),
 	Meteor			UMETA(DisplayName="Meteor"),
 	IceLance		UMETA(DisplayName="IceLance"),
