@@ -3,9 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "OB_BossFSMComponent.h"
 #include "GameFramework/Character.h"
 #include "OB_BossCharacter.generated.h"
+
+class UOB_BossFSMComponent;
 
 /**
  * @brief '컴포넌트들을 누가 들고 있지?' → ABossCharacter

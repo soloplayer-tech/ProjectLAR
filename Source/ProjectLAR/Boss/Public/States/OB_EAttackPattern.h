@@ -14,6 +14,6 @@ enum class EAttackState : uint8
 {
 	HAMMER	UMETA(DisplayName = "Hammer Pattern"),
 	RUSH	UMETA(DisplayName = "Rush Pattern"),
-	CARD	UMETA(DisplayName = "Card Pattern"),
-	SLAM	UMETA(DisplayName = "Slam Pattern")
+	SLAM	UMETA(DisplayName = "Slam Pattern"),
+	CARD	UMETA(DisplayName = "Card Pattern")
 };
