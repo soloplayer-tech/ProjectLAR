@@ -9,6 +9,7 @@
 
 class UBoxComponent;
 class UStaticMeshComponent;
+class ALFloatingDamageActor;
 
 UCLASS()
 class PROJECTLAR_API ALTestDamageBox : public AActor, public ILDamageable
@@ -34,6 +35,12 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
 	TObjectPtr<UStaticMeshComponent> MeshComp;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+	TSubclassOf<ALFloatingDamageActor> FloatingDamageActorClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+	float FloatingDamageHeightOffset = 140.0f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
 	float MaxHP = 10000.f;
