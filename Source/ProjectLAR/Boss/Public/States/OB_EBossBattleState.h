@@ -16,5 +16,6 @@ enum class EBossBattleState : uint8
 	IDLE	UMETA(DisplayName = "Idle"),
 	MOVE	UMETA(DisplayName = "Move"),
 	ATTACK  UMETA(DisplayName = "Attack"),
-	STUNNED UMETA(DisplayName = "Stunned")
+	STUNNED UMETA(DisplayName = "Stunned"),
+	DEAD	UMETA(DisplayName = "Dead")
 };

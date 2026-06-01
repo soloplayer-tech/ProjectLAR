@@ -3,6 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "OB_CombatComponent.h"
+#include "OB_LogManager.h"
+#include "OB_PatternComponent.h"
 #include "GameFramework/Character.h"
 #include "OB_BossCharacter.generated.h"
 
@@ -19,14 +22,17 @@ class PROJECTLAR_API AOB_BossCharacter : public ACharacter
 	
 	UPROPERTY(VisibleAnywhere)
 	UOB_BossFSMComponent* FSMComponent;
+	
+	UPROPERTY(VisibleAnywhere)
+	UOB_PatternComponent* PatternComponent;
 
 public:
 	// Sets default values for this character's properties
 	AOB_BossCharacter();
 	
-	UFUNCTION()
-	UOB_BossFSMComponent* GetFSMComponent() const { UE_LOG(LogTemp, Log, TEXT("Call GetFSMComponent")); return FSMComponent; }
-	
+	UOB_BossFSMComponent* GetFSMComponent() const { LOG_TRACE_INFO("Call GetFSMComponent"); return FSMComponent; }
+	UOB_PatternComponent* GetPatternComponent() const { LOG_TRACE_INFO("Call GetPatternComponent"); return PatternComponent; };
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
