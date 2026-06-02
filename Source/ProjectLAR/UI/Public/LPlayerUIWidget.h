@@ -29,6 +29,9 @@ protected:
 
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UProgressBar> PB_PlayerMP;
+	
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UProgressBar> PB_IdentityGauge;
 
 	// =========================
 	// Dash Cooldown UI
@@ -102,6 +105,7 @@ protected:
 	// Cast Bar UI
 	// =========================
 
+	
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UProgressBar> PB_CastProgress;
 

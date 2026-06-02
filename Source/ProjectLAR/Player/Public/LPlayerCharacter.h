@@ -6,7 +6,6 @@
 #include "LPlayerCharacterBase.h"
 #include "LPlayerSkillSlot.h"
 #include "LPlayerSkillID.h"
-#include "TimerManager.h"
 
 #include "ProjectLAR/Skill/Public/LIceLanceActor.h"
 #include "LMeteorActor.h"
@@ -23,6 +22,8 @@ class PROJECTLAR_API ALPlayerCharacter : public ALPlayerCharacterBase
 	
 public:
 	ALPlayerCharacter();
+	
+	virtual void Tick(float DeltaSeconds) override;
 	
 	virtual void Dash(const FVector& DashDirection) override;
 	
@@ -56,14 +57,66 @@ public:
 	float GetSkillIDCooldownRatio(ELPlayerSkillID SkillID) const;
 	
 	// =======================================================================================
+	// Player Resource Getter
 	
+	UFUNCTION(BlueprintPure, category = "Player|Resource")
+	float GetHPRatio() const;
 
+	UFUNCTION(BlueprintPure, category = "Player|Resource")
+	float GetManaRatio() const;
+	
+	UFUNCTION(BlueprintPure, category = "Player|Resource")
+	float GetIdentityRatio() const;
+	
+	UFUNCTION(BlueprintPure, category = "Player|Resource")
+	float GetCurrentHP() const;
+	
+	UFUNCTION(BlueprintPure, category = "Player|Resource")
+	float GetCurrentMana() const;
+	
+	UFUNCTION(BlueprintPure, category = "Player|Resource")
+	float GetCurrentIdentityGauge() const;
+	
+	UFUNCTION(BlueprintImplementableEvent, Category = "Identity")
+	void BP_OnIdentityActivated();
+	
+	UFUNCTION(BlueprintImplementableEvent, Category = "Identity")
+	void BP_OnIdentityEnded();
+	
+	bool CanSpendMana(float ManaCost) const;
+	bool SpendMana(float ManaCost);
+	
+	void RecoverMana(float Amount);
+	void AddIdentityGauge(float Amount);
+	bool CanActivateIdentity() const;
+	void ActivateIdentity();
+	void EndIdentity();
 
+	bool IsIdentityFull() const;
+	
+	void OnSkillHitConfirmed(ELPlayerSkillID SkillID, int32 HitCount);
+	bool IsIdentityActive() const;
+
+	float GetFinalSkillDamage(float BaseDamage, ELPlayerSkillID SkillID) const;
+	
+	
+	
 protected:
+	virtual void BeginPlay() override;
+	
 	void EndBasicAttack();
 	void EndSkill();
 	void EndBlink();
-
+	
+	void StartIdentityBuffVFX();
+	void StopIdentityBuffVFX();
+	
+	
+	float GetIdentityGainBySkill(ELPlayerSkillID SkillID) const;
+	float GetIdentityAdditionalGainBySkill(ELPlayerSkillID SkillID) const;
+	float GetIdentityMaxGainBySkill(ELPlayerSkillID SkillID) const;
+	float GetIdentityGainByHitCount(ELPlayerSkillID SkillID, int32 HitCount) const;
+	void ClearAllSkillCooldowns();
 	// =======================================================================================
 	// Skill Execute
 	// 현재는 이름이 UseQSkill/UseWSkill이지만,
@@ -80,7 +133,120 @@ protected:
 		ELPlayerSkillID SkillID,
 		const FVector& TargetLocation
 	);
+	
+	// =======================================================================================
+	// Player HP
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Resource|HP")
+	float MaxHP = 10000.f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Resource|HP")
+	float CurrentHP = 10000.f;
+	
+	// =======================================================================================
+	// Player Mana
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Resource|Mana")
+	float MaxMana = 10000.f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Resource|Mana")
+	float CurrentMana = 10000.f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Resource|Mana")
+	float ManaRegenPerSecond = 500.f;
+	
+	// =======================================================================================
+	// Player Resource - Identity
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Player|Resource|Identity")
+	float MaxIdentityGauge = 100.f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Player|Resource|Identity")
+	float CurrentIdentityGauge = 0.f;
+	
+	// =======================================================================================
+	// Identity Gain
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
+	float MeteorIdentityGain = 20.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
+	float IceLanceIdentityGain = 5.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
+	float ThunderIdentityGain = 8.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
+	float WindIdentityGain = 10.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
+	float BasicAttackIdentityGain = 2.0f;
+
+	// =======================================================================================
+	// Identity Gain - Additional Per Extra Target
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
+	float MeteorAdditionalIdentityGainPerTarget = 5.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
+	float IceLanceAdditionalIdentityGainPerTarget = 1.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
+	float ThunderAdditionalIdentityGainPerTarget = 2.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
+	float WindAdditionalIdentityGainPerTarget = 2.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
+	float BasicAttackAdditionalIdentityGainPerTarget = 0.0f;
+
+	// =======================================================================================
+	// Identity Gain - Max Per Hit Unit
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
+	float MeteorMaxIdentityGainPerCast = 30.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
+	float IceLanceMaxIdentityGainPerImpact = 8.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
+	float ThunderMaxIdentityGainPerStrike = 12.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
+	float WindMaxIdentityGainPerCast = 15.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
+	float BasicAttackMaxIdentityGainPerAttack = 2.0f;
+
+	// =======================================================================================
+	// Identity Active
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player|Identity")
+	bool bIdentityActive = false;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
+	float IdentityDuration = 10.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
+	float IdentityDamageMultiplier = 1.3f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
+	float IdentityCastDurationMultiplier = 0.7f;
+
+	FTimerHandle IdentityTimerHandle;
+	
+	// =======================================================================================
+	// Identity VFX
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity|VFX")
+	TObjectPtr<UNiagaraSystem> IdentityBuffVFX;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity|VFX")
+	FVector IdentityBuffVFXLocationOffset = FVector(0.0f, 0.0f, 0.0f);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity|VFX")
+	FRotator IdentityBuffVFXRotationOffset = FRotator::ZeroRotator;
+
+	UPROPERTY()
+	TObjectPtr<UNiagaraComponent> ActiveIdentityBuffVFXComponent;
+	
 	// =======================================================================================
 	// Cooldown Internal - SkillID 기준
 
@@ -104,7 +270,10 @@ public:
 protected:
 	
 	float GetSkillCastDuration(ELPlayerSkillID SkillID) const;
+	float GetSkillManaCost(ELPlayerSkillID SkillID) const;
+	void RegenerateMana(float DeltaTime);
 	bool DoesSkillNeedCasting(ELPlayerSkillID SkillID) const;
+	
 	
 	void StartSkillCast(
 		ELPlayerSkillSlot SkillSlot,
@@ -117,10 +286,10 @@ protected:
 		const FVector& TargetLocation
 		);
 	
-	void ApplySkillDamageToActor(
-	AActor* TargetActor,
-	float Damage,
-	ELPlayerSkillID SkillID
+	bool ApplySkillDamageToActor(
+		AActor* TargetActor,
+		float Damage,
+		ELPlayerSkillID SkillID
 	);
 	
 	void FinishSkillCast();
@@ -319,6 +488,20 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Cooldown")
 	float MeteorRainCooldown = 10.0f;
+	
+	// =======================================================================================
+	// Skill Mana Cost
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Mana")
+	float MeteorManaCost = 1500.f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Mana")
+	float IceLanceManaCost = 1200.f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Mana")
+	float ThunderManaCost = 1500.f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Mana")
+	float WindManaCost = 500.f;
 	
 	// =======================================================================================
 	// Skill Equip - 슬롯에 장착된 실제 스킬

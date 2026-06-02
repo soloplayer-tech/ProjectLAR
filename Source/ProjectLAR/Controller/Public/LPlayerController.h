@@ -24,6 +24,11 @@ protected:
 	virtual void SetupInputComponent() override;
 	virtual void OnPossess(APawn* InPawn) override;
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input")
+	TObjectPtr<UInputAction> IdentityAction;
+
+	void IdentityInput();
+	
 private:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	TObjectPtr<UInputMappingContext> IMC_Player;
@@ -48,6 +53,7 @@ private:
 	
 	UPROPERTY(EditAnywhere, Category = "Skill")
 	TObjectPtr<UInputAction> SkillRAction;
+	
 	
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<ULPlayerUIWidget> PlayerUIWidgetClass;

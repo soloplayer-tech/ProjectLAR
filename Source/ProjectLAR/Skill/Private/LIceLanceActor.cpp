@@ -4,6 +4,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "DrawDebugHelpers.h"
+#include "LPlayerCharacter.h"
 #include "Engine/World.h"
 #include "Engine/EngineTypes.h"
 #include "ProjectLAR/Combat/Public/LDamageable.h"
@@ -197,6 +198,7 @@ void ALIceLanceActor::ApplyImpactDamage()
 	}
 
 	TArray<AActor*> DamagedActors;
+	int32 DamagedCount = 0;
 
 	for (const FOverlapResult& Result : OverlapResults)
 	{
@@ -214,20 +216,35 @@ void ALIceLanceActor::ApplyImpactDamage()
 
 		DamagedActors.Add(HitActor);
 
-		ApplyDamageToActor(HitActor);
+		const bool bDamageApplied = ApplyDamageToActor(HitActor);
+
+		if (bDamageApplied)
+		{
+			DamagedCount++;
+		}
+	}
+
+	ALPlayerCharacter* OwnerPlayer = Cast<ALPlayerCharacter>(GetOwner());
+
+	if (OwnerPlayer && DamagedCount > 0)
+	{
+		OwnerPlayer->OnSkillHitConfirmed(
+			ELPlayerSkillID::IceLance,
+			DamagedCount
+		);
 	}
 }
 
-void ALIceLanceActor::ApplyDamageToActor(AActor* TargetActor)
+bool ALIceLanceActor::ApplyDamageToActor(AActor* TargetActor)
 {
 	if (!TargetActor)
 	{
-		return;
+		return false;
 	}
 
 	if (!TargetActor->GetClass()->ImplementsInterface(ULDamageable::StaticClass()))
 	{
-		return;
+		return false;
 	}
 
 	AActor* DamageCauser = GetOwner();
@@ -236,19 +253,35 @@ void ALIceLanceActor::ApplyDamageToActor(AActor* TargetActor)
 	{
 		DamageCauser = this;
 	}
+	
+	float FinalDamage = IceLanceDamage;
+
+	ALPlayerCharacter* OwnerPlayer =
+		Cast<ALPlayerCharacter>(DamageCauser);
+
+	if (OwnerPlayer)
+	{
+		FinalDamage = OwnerPlayer->GetFinalSkillDamage(
+			IceLanceDamage,
+			ELPlayerSkillID::IceLance
+		);
+	}
 
 	ILDamageable::Execute_ReceiveSkillDamage(
 		TargetActor,
-		IceLanceDamage,
+		FinalDamage,
 		DamageCauser,
 		ELPlayerSkillID::IceLance
 	);
+
 
 	UE_LOG(
 		LogTemp,
 		Warning,
 		TEXT("IceLance Impact Damage: %s / Damage: %.1f"),
 		*TargetActor->GetName(),
-		IceLanceDamage
+		FinalDamage
 	);
+
+	return true;
 }

@@ -1,6 +1,7 @@
 
 #include "LThunderActor.h"
 #include "DrawDebugHelpers.h"
+#include "LPlayerCharacter.h"
 #include "Engine/World.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/OverlapResult.h"
@@ -123,6 +124,7 @@ void ALThunderActor::ApplyThunderStrikeDamage(const FVector& StrikeLocation)
 	}
 
 	TArray<AActor*> DamagedActors;
+	int32 DamagedCount = 0;
 
 	for (const FOverlapResult& Result : OverlapResults)
 	{
@@ -140,20 +142,35 @@ void ALThunderActor::ApplyThunderStrikeDamage(const FVector& StrikeLocation)
 
 		DamagedActors.Add(HitActor);
 
-		ApplyDamageToActor(HitActor);
+		const bool bDamageApplied = ApplyDamageToActor(HitActor);
+
+		if (bDamageApplied)
+		{
+			DamagedCount++;
+		}
+	}
+
+	ALPlayerCharacter* OwnerPlayer = Cast<ALPlayerCharacter>(GetOwner());
+
+	if (OwnerPlayer && DamagedCount > 0)
+	{
+		OwnerPlayer->OnSkillHitConfirmed(
+			ELPlayerSkillID::Thunder,
+			DamagedCount
+		);
 	}
 }
 
-void ALThunderActor::ApplyDamageToActor(AActor* TargetActor)
+bool ALThunderActor::ApplyDamageToActor(AActor* TargetActor)
 {
 	if (!TargetActor)
 	{
-		return;
+		return false;
 	}
 
 	if (!TargetActor->GetClass()->ImplementsInterface(ULDamageable::StaticClass()))
 	{
-		return;
+		return false;
 	}
 
 	AActor* DamageCauser = GetOwner();
@@ -163,19 +180,34 @@ void ALThunderActor::ApplyDamageToActor(AActor* TargetActor)
 		DamageCauser = this;
 	}
 
+	float FinalDamage = ThunderDamage;
+
+	ALPlayerCharacter* OwnerPlayer =
+		Cast<ALPlayerCharacter>(DamageCauser);
+
+	if (OwnerPlayer)
+	{
+		FinalDamage = OwnerPlayer->GetFinalSkillDamage(
+			ThunderDamage,
+			ELPlayerSkillID::Thunder
+		);
+	}
+
 	ILDamageable::Execute_ReceiveSkillDamage(
 		TargetActor,
-		ThunderDamage,
+		FinalDamage,
 		DamageCauser,
 		ELPlayerSkillID::Thunder
 	);
+
 
 	UE_LOG(
 		LogTemp,
 		Warning,
 		TEXT("Thunder Damage: %s / Damage: %.1f"),
 		*TargetActor->GetName(),
-		ThunderDamage
+		FinalDamage
 	);
-}
 
+	return true;
+}

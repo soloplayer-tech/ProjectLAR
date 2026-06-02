@@ -118,6 +118,16 @@ void ALPlayerController::SetupInputComponent()
 				&ALPlayerController::SkillRInput
 				);
 		}
+		
+		if (IdentityAction)
+		{
+			EnhancedInput->BindAction(
+				IdentityAction,
+				ETriggerEvent::Started,
+				this,
+				&ALPlayerController::IdentityInput
+			);
+		}
 	}
 }
 
@@ -126,6 +136,19 @@ void ALPlayerController::OnPossess(APawn* InPawn)
 	Super::OnPossess(InPawn);
 
 	BindPlayerUIToPawn(InPawn);
+}
+
+void ALPlayerController::IdentityInput()
+{
+	ALPlayerCharacter* PlayerCharacter =
+		Cast<ALPlayerCharacter>(GetPawn());
+
+	if (!PlayerCharacter)
+	{
+		return;
+	}
+
+	PlayerCharacter->ActivateIdentity();
 }
 
 void ALPlayerController::CreatePlayerUIWidget()
