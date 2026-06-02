@@ -35,7 +35,7 @@ protected:
 	void ApplyImpactDamage();
 
 	// 실제 데미지 적용
-	void ApplyDamageToActor(AActor* TargetActor);
+	bool ApplyDamageToActor(AActor* TargetActor);
 	
 protected:
 	UPROPERTY(EditAnywhere,BlueprintReadOnly, Category = "Components")

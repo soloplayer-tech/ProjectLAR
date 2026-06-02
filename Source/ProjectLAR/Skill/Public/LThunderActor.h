@@ -30,7 +30,7 @@ protected:
 	void ApplyThunderStrikeDamage(const FVector& StrikeLocation);
 
 	// 실제 데미지 적용
-	void ApplyDamageToActor(AActor* TargetActor);
+	bool ApplyDamageToActor(AActor* TargetActor);
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category= "Component")
 	TObjectPtr<USceneComponent> RootScene;
