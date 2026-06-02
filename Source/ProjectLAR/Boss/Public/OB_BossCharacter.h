@@ -3,12 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "OB_CombatComponent.h"
 #include "OB_LogManager.h"
-#include "OB_PatternComponent.h"
 #include "GameFramework/Character.h"
+#include "ProjectLAR/Combat/Public/LDamageable.h"
 #include "OB_BossCharacter.generated.h"
 
+class ALFloatingDamageActor;
+class UOB_PatternComponent;
+class UOB_CombatComponent;
 class UOB_BossFSMComponent;
 
 /**
@@ -16,27 +18,47 @@ class UOB_BossFSMComponent;
  */
 
 UCLASS()
-class PROJECTLAR_API AOB_BossCharacter : public ACharacter
+class PROJECTLAR_API AOB_BossCharacter : public ACharacter, public ILDamageable
 {
 	GENERATED_BODY()
-	
-	UPROPERTY(VisibleAnywhere)
-	UOB_BossFSMComponent* FSMComponent;
-	
-	UPROPERTY(VisibleAnywhere)
-	UOB_PatternComponent* PatternComponent;
 
 public:
 	// Sets default values for this character's properties
 	AOB_BossCharacter();
 	
+	UFUNCTION()
 	UOB_BossFSMComponent* GetFSMComponent() const { LOG_TRACE_INFO("Call GetFSMComponent"); return FSMComponent; }
-	UOB_PatternComponent* GetPatternComponent() const { LOG_TRACE_INFO("Call GetPatternComponent"); return PatternComponent; };
+	
+	UFUNCTION()
+	UOB_PatternComponent* GetPatternComponent() const { LOG_TRACE_INFO("Call GetPatternComponent"); return PatternComponent; }
+	
+	UFUNCTION()
+	UOB_CombatComponent* GetCombatComponent() const { LOG_TRACE_INFO("Call GetCombatComponent"); return CombatComponent; }
+	
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+	TSubclassOf<ALFloatingDamageActor> FloatingDamageActorClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+	float FloatingDamageHeightOffset = 140.0f;
+
+
+private:
+	UPROPERTY(VisibleAnywhere)
+	UOB_BossFSMComponent* FSMComponent;
+	
+	UPROPERTY(VisibleAnywhere)
+	UOB_PatternComponent* PatternComponent;
+	
+	UPROPERTY(VisibleAnywhere)
+	UOB_CombatComponent* CombatComponent;
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
+	virtual void ReceiveSkillDamage_Implementation(float Damage, AActor* DamageCauser, ELPlayerSkillID SkillID) override;
+	
+	
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -44,4 +66,5 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
+
 };

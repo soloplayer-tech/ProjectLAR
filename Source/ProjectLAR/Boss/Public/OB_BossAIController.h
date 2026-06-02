@@ -18,33 +18,31 @@ class PROJECTLAR_API AOB_BossAIController : public AAIController
 public:
 	// Sets default values for this actor's properties
 	AOB_BossAIController();
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BossControl")
+	float AcceptanceRadius = 200.f;
+	
+	UFUNCTION()
+	void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
+	
+	UFUNCTION()
+	void StartMove();
 
 	/** MoveToActor 변수 설명 인용 
 	 *  @brief Makes AI go toward specified Dest location, aborts any active path following
 	 *  @param AcceptanceRadius - finish move if pawn gets close enough
 	 *  @note AcceptanceRadius has default value or -1 due to Header Parser not being able to recognize UPathFollowingComponent::DefaultAcceptanceRadius
 	 */
-	
-	UPROPERTY(EditAnywhere,BlueprintReadOnly, Category="BossControl")
+
+private:
+	UPROPERTY()
 	TObjectPtr<AOB_BossCharacter> BossCharacter;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BossControl")
-UOB_BossFSMComponent* FSMComp;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BossControl")
-	float AcceptanceRadius = 200.f;
+	UPROPERTY()
+	UOB_BossFSMComponent* FSMComp;
 	
 	UPROPERTY(VisibleAnywhere)
 	UAIPerceptionComponent* PerceptionComp;
-	
-	FTimerHandle LoseSightTimer;
-	FTimerHandle ChaseTimer;
-
-	UFUNCTION()
-	void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
-	
-	UFUNCTION()
-	void StartMove();
 	
 	// void OnMoveCompleted(FAIRequestID RequestID,  EPathFollowingResult::Type Result) override;
 	

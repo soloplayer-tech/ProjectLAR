@@ -4,6 +4,8 @@
 #include "OB_CombatComponent.h"
 #include "OB_BossCharacter.h"
 #include "OB_BossFSMComponent.h"
+#include "OB_PatternComponent.h"
+#include "LFloatingDamageActor.h"
 
 
 // Sets default values for this component's properties
@@ -21,7 +23,29 @@ UOB_CombatComponent::UOB_CombatComponent()
 	{
 		PatternComp = OwnerCharacter -> GetPatternComponent();
 	}
+	
 }
+
+
+// Called when the game starts
+void UOB_CombatComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// ...
+	
+}
+
+
+// Called every frame
+void UOB_CombatComponent::TickComponent(float DeltaTime, ELevelTick TickType,
+                                        FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	// ...
+}
+
 
 void UOB_CombatComponent::StartAttack()
 {
@@ -99,26 +123,8 @@ void UOB_CombatComponent::OnDead()
 		
 		if (FSMComp)
 			FSMComp->SetState(EBossBattleState::DEAD);
+			OwnerCharacter -> Destroy();
 	}
-	
 }
 
-// Called when the game starts
-void UOB_CombatComponent::BeginPlay()
-{
-	Super::BeginPlay();
-
-	// ...
-	
-}
-
-
-// Called every frame
-void UOB_CombatComponent::TickComponent(float DeltaTime, ELevelTick TickType,
-                                        FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// ...
-}
 
