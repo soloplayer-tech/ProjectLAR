@@ -5,7 +5,6 @@
 #include "OB_BossCharacter.h"
 #include "OB_BossFSMComponent.h"
 #include "OB_PatternComponent.h"
-#include "LFloatingDamageActor.h"
 
 
 // Sets default values for this component's properties
@@ -18,12 +17,6 @@ UOB_CombatComponent::UOB_CombatComponent()
 	// ...
 	CurHP = MaxHP;
 	
-	OwnerCharacter = Cast<AOB_BossCharacter>(GetOwner());
-	if (OwnerCharacter != nullptr)
-	{
-		PatternComp = OwnerCharacter -> GetPatternComponent();
-	}
-	
 }
 
 
@@ -33,7 +26,11 @@ void UOB_CombatComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// ...
-	
+	OwnerCharacter = Cast<AOB_BossCharacter>(GetOwner());
+	if (OwnerCharacter != nullptr)
+	{
+		PatternComp = OwnerCharacter -> GetPatternComponent();
+	}
 }
 
 
@@ -122,8 +119,22 @@ void UOB_CombatComponent::OnDead()
 		auto* FSMComp = OwnerCharacter->GetFSMComponent();
 		
 		if (FSMComp)
+		{
 			FSMComp->SetState(EBossBattleState::DEAD);
+			UE_LOG(LogTemp, Error,
+			    TEXT("GetOwner() = %s"),
+			    *GetNameSafe(GetOwner()));
+			
+			UE_LOG(LogTemp, Error,
+				TEXT("OwnerCharacter = %s"),
+				*GetNameSafe(OwnerCharacter));
+
+			UE_LOG(LogTemp, Error,
+				TEXT("OwnerCharacter Path = %s"),
+				*GetPathNameSafe(OwnerCharacter));
+
 			OwnerCharacter -> Destroy();
+		}
 	}
 }
 
