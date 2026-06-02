@@ -130,7 +130,7 @@ void ALMeteorActor::ApplyImpactDamage()
 
 	const FVector DamageLocation = ImpactLocation;
 
-	if (bDrawImpactDebug)
+	/*if (bDrawImpactDebug)
 	{
 		DrawDebugSphere(
 			World,
@@ -141,7 +141,7 @@ void ALMeteorActor::ApplyImpactDamage()
 			false,
 			1.0f
 		);
-	}
+	}*/
 
 	TArray<FOverlapResult> OverlapResults;
 

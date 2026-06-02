@@ -9,6 +9,7 @@
 #include "Blueprint/AIBlueprintHelperLibrary.h"
 #include "Engine/LocalPlayer.h"
 #include "ProjectLAR/Player/Public/LPlayerCharacter.h"
+#include "ProjectLAR/UI/Public/LSkillWindowWidget.h"
 #include "ProjectLAR/Player/Public/LPlayerCharacterBase.h"
 
 #define ECC_SkillTarget ECC_GameTraceChannel1
@@ -28,10 +29,12 @@ void ALPlayerController::BeginPlay()
 	Super::BeginPlay();
 	
 	CreatePlayerUIWidget();
-	
+	CreateSkillWindowWidget();
+
 	if (ULocalPlayer* LocalPlayer = GetLocalPlayer())
 	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
+			LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
 		{
 			if (IMC_Player)
 			{
@@ -39,8 +42,6 @@ void ALPlayerController::BeginPlay()
 			}
 		}
 	}
-	
-
 }
 
 void ALPlayerController::SetupInputComponent()
@@ -128,6 +129,36 @@ void ALPlayerController::SetupInputComponent()
 				&ALPlayerController::IdentityInput
 			);
 		}
+		
+		if (CameraZoomInAction)
+		{
+			EnhancedInput->BindAction(
+				CameraZoomInAction,
+				ETriggerEvent::Started,
+				this,
+				&ALPlayerController::CameraZoomInInput
+			);
+		}
+
+		if (CameraZoomOutAction)
+		{
+			EnhancedInput->BindAction(
+				CameraZoomOutAction,
+				ETriggerEvent::Started,
+				this,
+				&ALPlayerController::CameraZoomOutInput
+			);
+		}
+		
+		if (ToggleSkillWindowAction)
+		{
+			EnhancedInput->BindAction(
+				ToggleSkillWindowAction,
+				ETriggerEvent::Started,
+				this,
+				&ALPlayerController::ToggleSkillWindowInput
+			);
+		}
 	}
 }
 
@@ -136,6 +167,7 @@ void ALPlayerController::OnPossess(APawn* InPawn)
 	Super::OnPossess(InPawn);
 
 	BindPlayerUIToPawn(InPawn);
+	BindSkillWindowToPawn(InPawn);
 }
 
 void ALPlayerController::IdentityInput()
@@ -149,6 +181,32 @@ void ALPlayerController::IdentityInput()
 	}
 
 	PlayerCharacter->ActivateIdentity();
+}
+
+void ALPlayerController::CameraZoomInInput()
+{
+	ALPlayerCharacterBase* PlayerCharacter =
+		Cast<ALPlayerCharacterBase>(GetPawn());
+
+	if (!PlayerCharacter)
+	{
+		return;
+	}
+
+	PlayerCharacter->CameraZoomIn();
+}
+
+void ALPlayerController::CameraZoomOutInput()
+{
+	ALPlayerCharacterBase* PlayerCharacter =
+		Cast<ALPlayerCharacterBase>(GetPawn());
+
+	if (!PlayerCharacter)
+	{
+		return;
+	}
+
+	PlayerCharacter->CameraZoomOut();
 }
 
 void ALPlayerController::CreatePlayerUIWidget()
@@ -363,6 +421,81 @@ void ALPlayerController::HandleSkillInput(ELPlayerSkillSlot SkillSlot)
 	PlayerCharacter->UseSkill(SkillSlot, MouseworldLocation);
 }
 
+
+void ALPlayerController::CreateSkillWindowWidget()
+{
+	if (SkillWindowWidget)
+	{
+		BindSkillWindowToPawn(GetPawn());
+		return;
+	}
+
+	if (!IsLocalController())
+	{
+		return;
+	}
+
+	if (!SkillWindowWidgetClass)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CreateSkillWindowWidget Failed: SkillWindowWidgetClass is null"));
+		return;
+	}
+
+	SkillWindowWidget = CreateWidget<ULSkillWindowWidget>(
+		this,
+		SkillWindowWidgetClass
+	);
+
+	if (!SkillWindowWidget)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CreateSkillWindowWidget Failed: CreateWidget returned null"));
+		return;
+	}
+
+	SkillWindowWidget->AddToViewport(50);
+
+	// 처음에는 숨김
+	SkillWindowWidget->SetVisibility(ESlateVisibility::Collapsed);
+
+	BindSkillWindowToPawn(GetPawn());
+
+	UE_LOG(LogTemp, Warning, TEXT("SkillWindowWidget Created"));
+}
+
+void ALPlayerController::BindSkillWindowToPawn(APawn* InPawn)
+{
+	if (!SkillWindowWidget)
+	{
+		return;
+	}
+
+	ALPlayerCharacter* PlayerCharacter =
+		Cast<ALPlayerCharacter>(InPawn);
+
+	SkillWindowWidget->SetOwningPlayerCharacter(PlayerCharacter);
+}
+
+void ALPlayerController::ToggleSkillWindowInput()
+{
+	if (!SkillWindowWidget)
+	{
+		CreateSkillWindowWidget();
+	}
+
+	if (!SkillWindowWidget)
+	{
+		return;
+	}
+
+	const bool bCurrentlyVisible =
+		SkillWindowWidget->GetVisibility() != ESlateVisibility::Collapsed;
+
+	SkillWindowWidget->SetVisibility(
+		bCurrentlyVisible
+			? ESlateVisibility::Collapsed
+			: ESlateVisibility::Visible
+	);
+}
 
 /*FHitResult HitResult;
 	

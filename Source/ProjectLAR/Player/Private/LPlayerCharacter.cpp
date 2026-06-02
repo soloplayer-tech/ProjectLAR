@@ -5,6 +5,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "DrawDebugHelpers.h"
+#include "Components/SlateWrapperTypes.h"
 #include "Engine/World.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/OverlapResult.h"
@@ -306,6 +307,8 @@ void ALPlayerCharacter::ActivateIdentity()
 	
 	BP_OnIdentityActivated();
 
+	
+	
 	GetWorldTimerManager().ClearTimer(IdentityTimerHandle);
 
 	GetWorldTimerManager().SetTimer(
@@ -321,6 +324,8 @@ void ALPlayerCharacter::EndIdentity()
 {
 	bIdentityActive = false;
 	StopIdentityBuffVFX();
+	
+	BP_OnIdentityEnded();
 	
 	GetWorldTimerManager().ClearTimer(IdentityTimerHandle);
 }
@@ -433,6 +438,7 @@ void ALPlayerCharacter::StartIdentityBuffVFX()
 			
 		);
 }
+
 
 void ALPlayerCharacter::StopIdentityBuffVFX()
 {
@@ -1129,7 +1135,7 @@ void ALPlayerCharacter::ApplyBasicAttackDamage(const FVector& AttackDirection)
 
 	DamageCenter.Z += BasicAttackDamageHeightOffset;
 
-	if (bDrawBasicAttackDamageDebug)
+	/*if (bDrawBasicAttackDamageDebug)
 	{
 		DrawDebugBox(
 			World,
@@ -1140,7 +1146,7 @@ void ALPlayerCharacter::ApplyBasicAttackDamage(const FVector& AttackDirection)
 			false,
 			1.0f
 		);
-	}
+	}*/
 
 	TArray<FOverlapResult> OverlapResults;
 
@@ -1227,7 +1233,7 @@ void ALPlayerCharacter::ApplyWindDamage(const FVector& AttackDirection)
 
 	DamageCenter.Z += WindDamageHeightOffset;
 
-	if (bDrawWindDamageDebug)
+	/*if (bDrawWindDamageDebug)
 	{
 		DrawDebugBox(
 			World,
@@ -1238,7 +1244,7 @@ void ALPlayerCharacter::ApplyWindDamage(const FVector& AttackDirection)
 			false,
 			1.0f
 		);
-	}
+	}*/
 
 	TArray<FOverlapResult> OverlapResults;
 

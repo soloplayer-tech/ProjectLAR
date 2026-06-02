@@ -156,7 +156,7 @@ void ALIceLanceActor::ApplyImpactDamage()
 		);
 	}
 
-	if (bDrawImpactDebug)
+	/*if (bDrawImpactDebug)
 	{
 		DrawDebugSphere(
 			World,
@@ -167,7 +167,7 @@ void ALIceLanceActor::ApplyImpactDamage()
 			false,
 			1.0f
 		);
-	}
+	}*/
 
 	TArray<FOverlapResult> OverlapResults;
 

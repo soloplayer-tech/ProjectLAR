@@ -59,6 +59,12 @@ void ULPlayerUIWidget::NativeConstruct()
 		TXT_CastRemaining->SetVisibility(ESlateVisibility::Collapsed);
 		TXT_CastRemaining->SetText(FText::GetEmpty());
 	}
+	
+	if (IMG_IdentityFlameOverlay)
+	{
+		IMG_IdentityFlameOverlay->SetVisibility(ESlateVisibility::Collapsed);
+		IMG_IdentityFlameOverlay->SetRenderOpacity(0.0f);
+	}
 }
 
 void ULPlayerUIWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
@@ -79,6 +85,11 @@ void ULPlayerUIWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 	const float DashRemaining = ObservedCharacter->GetDashCooldownRemaining();
 	const float DashRatio = ObservedCharacter->GetDashCooldownRatio();
 
+	if (!PlayerCharacter)
+	{
+		return;
+	}
+	
 	if (PB_PlayerHP)
 	{
 		PB_PlayerHP->SetPercent(PlayerCharacter->GetHPRatio());
@@ -93,6 +104,8 @@ void ULPlayerUIWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 	{
 		PB_IdentityGauge->SetPercent(PlayerCharacter->GetIdentityRatio());
 	}
+	
+	UpdateIdentityActiveUI(PlayerCharacter);
 	
 	if (IMG_DashIcon)
 	{
@@ -177,6 +190,36 @@ UMaterialInstanceDynamic* ULPlayerUIWidget::InitCooldownImage(UImage* CooldownIm
 	}
 
 	return DynamicMaterial;
+}
+
+void ULPlayerUIWidget::UpdateIdentityActiveUI(ALPlayerCharacter* PlayerCharacter)
+{
+	if (!PlayerCharacter)
+	{
+		return;
+	}
+
+	const bool bIdentityActive = PlayerCharacter->IsIdentityActive();
+
+	if (IMG_IdentityFlameOverlay)
+	{
+		if (bIdentityActive)
+		{
+			IMG_IdentityFlameOverlay->SetVisibility(
+				ESlateVisibility::HitTestInvisible
+			);
+
+			IMG_IdentityFlameOverlay->SetRenderOpacity(1.0f);
+		}
+		else
+		{
+			IMG_IdentityFlameOverlay->SetVisibility(
+				ESlateVisibility::Collapsed
+			);
+
+			IMG_IdentityFlameOverlay->SetRenderOpacity(0.0f);
+		}
+	}
 }
 
 void ULPlayerUIWidget::InitCooldownText(UTextBlock* CooldownText)

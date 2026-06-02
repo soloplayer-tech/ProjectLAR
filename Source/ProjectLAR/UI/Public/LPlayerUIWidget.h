@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "LPlayerCharacter.h"
 #include "Blueprint/UserWidget.h"
 #include "ProjectLAR/Player/Public/LPlayerSkillSlot.h"
 #include "LPlayerUIWidget.generated.h"
@@ -114,6 +115,9 @@ protected:
 
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> TXT_CastRemaining;
+	
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UImage> IMG_IdentityFlameOverlay;
 
 private:
 	UPROPERTY()
@@ -121,6 +125,8 @@ private:
 	
 	UMaterialInstanceDynamic* InitCooldownImage(UImage* CooldownImage);
 
+	void UpdateIdentityActiveUI(ALPlayerCharacter* PlayerCharacter);
+	
 	void InitCooldownText(UTextBlock* CooldownText);
 
 	void UpdateCooldownUI(

@@ -35,7 +35,11 @@ ALPlayerCharacterBase::ALPlayerCharacterBase()
 void ALPlayerCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	if (CameraBoomComp)
+	{
+		TargetCameraArmLength = CameraBoomComp->TargetArmLength;
+	}
 }
 
 void ALPlayerCharacterBase::Tick(float DeltaTime)
@@ -43,11 +47,50 @@ void ALPlayerCharacterBase::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	UpdateDash(DeltaTime);
+	UpdateCameraZoom(DeltaTime);
 }
 
 void ALPlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+}
+
+
+void ALPlayerCharacterBase::CameraZoomIn()
+{
+	// 휠 다운 시 호출
+	// TargetArmLength가 줄어들면 카메라가 가까워진다.
+	TargetCameraArmLength = FMath::Clamp(
+		TargetCameraArmLength + CameraZoomStep,
+		MinCameraArmLength,
+		MaxCameraArmLength
+	);
+}
+
+void ALPlayerCharacterBase::CameraZoomOut()
+{
+	// 휠 업 시 호출
+	// TargetArmLength가 늘어나면 카메라가 멀어진다.
+	TargetCameraArmLength = FMath::Clamp(
+		TargetCameraArmLength - CameraZoomStep,
+		MinCameraArmLength,
+		MaxCameraArmLength
+	);
+}
+
+void ALPlayerCharacterBase::UpdateCameraZoom(float DeltaTime)
+{
+	if (!CameraBoomComp)
+	{
+		return;
+	}
+
+	CameraBoomComp->TargetArmLength = FMath::FInterpTo(
+		CameraBoomComp->TargetArmLength,
+		TargetCameraArmLength,
+		DeltaTime,
+		CameraZoomInterpSpeed
+	);
 }
 
 void ALPlayerCharacterBase::Dash(const FVector& DashDirection)
