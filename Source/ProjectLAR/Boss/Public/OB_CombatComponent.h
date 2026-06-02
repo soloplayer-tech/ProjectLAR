@@ -23,28 +23,47 @@ class PROJECTLAR_API UOB_CombatComponent : public UActorComponent
 public:
 	// Sets default values for this component's properties
 	UOB_CombatComponent();
-	
-	// TODO: EAttackState GetFitAttackPattern(float Distance); 추후 디테일 작업들어갈 떄 개발
+
+	void StartAttack();
+	void StopAttack();
 	
 	void TakeDamage(float DamageAmount);
+	bool IsDead() const { return CurHP <= 0.f; }
+	
 	float GetCurHP() const { return CurHP; }
+	float GetHPRatio() const { return CurHP / MaxHP; }
+
+	
+private:     
+	
+	// 캐싱
+	UPROPERTY()
+	class AOB_BossCharacter* OwnerCharacter;
+
+	UPROPERTY()
+	class UOB_PatternComponent* PatternComp;
+
+	 // HP
+    UPROPERTY(EditDefaultsOnly, Category="Combat|HP")
+    float MaxHP = 1000.f;
+
+    UPROPERTY(VisibleAnywhere, Category="Combat|HP")
+    float CurHP;
+
+    // 쿨타임
+    UPROPERTY(EditDefaultsOnly, Category="Combat|Attack")
+    float AttackCooldown = 2.0f;
+
+    FTimerHandle CooldownTimer;
+    bool bCanAttack = true;
+
+    void OnCooldownFinished();
+    void OnDead();
+	
 
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
-	
-	UPROPERTY(EditAnywhere, Category="Boss | Stats")
-	float MaxHP = 1000.0f;
-	
-	float CurHP;
-	
-	// RUSH 전술 수치
-	UPROPERTY(EditAnywhere, Category = "Boss | Tactics")
-	float RushTriggerDistance = 800.0f; // 8미터 이상이면 돌진
-
-	// RUSH 연속 발동을 막기 위한 내부 쿨타임 제어 변수
-	bool bIsRushCooldown = false;
-	FTimerHandle RushCooldownTimerHandle;
 	
 
 public:

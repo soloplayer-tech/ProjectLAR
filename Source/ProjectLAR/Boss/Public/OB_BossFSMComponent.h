@@ -11,7 +11,7 @@
  * @brief '상태를 누가 관리하지?' → FSM 컴포넌트.
  */
 
-enum class EAttackState : uint8;
+enum class EAttackPattern : uint8;
 class AOB_BossCharacter;
 class AOB_BossAIController;
 
@@ -47,9 +47,6 @@ public:
 	
 	TObjectPtr<AActor> GetTargetActor() const { return Target; }
 	EBossBattleState GetCurState() const { return CurAIState; }
-	
-	void SetAttackPattern();
-	void OnEnterAtkPattern( EAttackState AttackPattern );
 
 protected:
 	// Called when the game starts
