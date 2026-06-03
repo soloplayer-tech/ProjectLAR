@@ -135,7 +135,7 @@ void ULPlayerUIWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 		return;
 	}
 
-	// Q Slot
+	/*// Q Slot
 	UpdateSkillSlotCooldownUI(
 		ELPlayerSkillSlot::Q,
 		IMG_QCooldownRadial.Get(),
@@ -165,7 +165,7 @@ void ULPlayerUIWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 		IMG_RCooldownRadial.Get(),
 		RCooldownMaterial.Get(),
 		TXT_RCooldown.Get()
-	);
+	);*/
 	
 	UpdateCastBarUI();
 }

@@ -41,6 +41,11 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Skill|Equip")
 	ELPlayerSkillID GetEquippedSkillID(ELPlayerSkillSlot SkillSlot) const;
 	
+	void EquipSkillToSlot(
+	ELPlayerSkillSlot SkillSlot,
+	ELPlayerSkillID SkillID
+);
+	
 	UFUNCTION(BlueprintCallable, Category = "Skill|Equip")
 	void SetEquippedSkillID(ELPlayerSkillSlot SkillSlot, ELPlayerSkillID SkillID);
 

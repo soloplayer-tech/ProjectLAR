@@ -838,6 +838,57 @@ void ALPlayerCharacter::SetEquippedSkillID(
 	}
 }
 
+void ALPlayerCharacter::EquipSkillToSlot(
+	ELPlayerSkillSlot SkillSlot,
+	ELPlayerSkillID SkillID
+)
+{
+	if (SkillID == ELPlayerSkillID::None)
+	{
+		SetEquippedSkillID(SkillSlot, ELPlayerSkillID::None);
+
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("EquipSkillToSlot Clear / Slot: %s"),
+			*UEnum::GetValueAsString(SkillSlot)
+		);
+
+		return;
+	}
+
+	const TArray<ELPlayerSkillSlot> SkillSlots =
+	{
+		ELPlayerSkillSlot::Q,
+		ELPlayerSkillSlot::W,
+		ELPlayerSkillSlot::E,
+		ELPlayerSkillSlot::R
+	};
+
+	for (const ELPlayerSkillSlot ExistingSlot : SkillSlots)
+	{
+		if (ExistingSlot == SkillSlot)
+		{
+			continue;
+		}
+
+		if (GetEquippedSkillID(ExistingSlot) == SkillID)
+		{
+			SetEquippedSkillID(ExistingSlot, ELPlayerSkillID::None);
+		}
+	}
+
+	SetEquippedSkillID(SkillSlot, SkillID);
+
+	UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("EquipSkillToSlot Success / Slot: %s / Skill: %s"),
+		*UEnum::GetValueAsString(SkillSlot),
+		*UEnum::GetValueAsString(SkillID)
+	);
+}
+
 bool ALPlayerCharacter::ExecuteSkillByID(
 	ELPlayerSkillID SkillID,
 	const FVector& TargetLocation)

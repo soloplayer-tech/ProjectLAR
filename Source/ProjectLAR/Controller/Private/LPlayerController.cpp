@@ -242,7 +242,7 @@ void ALPlayerController::CreatePlayerUIWidget()
 		return;
 	}
 
-	PlayerUIWidget->AddToViewport();
+	PlayerUIWidget->AddToViewport(100);
 
 	UE_LOG(LogTemp, Warning, TEXT("PlayerUIWidget AddToViewport Success"));
 
