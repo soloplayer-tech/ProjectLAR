@@ -46,19 +46,10 @@ void UOB_CombatComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 
 void UOB_CombatComponent::StartAttack()
 {
-	LOG_TRACE_INFO("Call StartAttack")
+	LOG_TRACE_INFO()
 	
-	if (!bCanAttack)
-	{
-		LOG_TRACE_INFO("Is CoolTime");
-		return;
-	}
-	
-	if (!PatternComp)
-	{
-		LOG_TRACE_WARN("PatternComp is null!!");
-		return;
-	}
+	if (!bCanAttack) { LOG_TRACE_INFO("Is CoolTime"); return; }
+	if (!PatternComp) { LOG_TRACE_WARN("PatternComp is null!!"); return; }
 	
 	PatternComp -> SelectAndExecute();
 	

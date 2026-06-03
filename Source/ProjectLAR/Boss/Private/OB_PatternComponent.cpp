@@ -71,7 +71,7 @@ void UOB_PatternComponent::ExecutePattern(EAttackPattern Pattern)
 
 void UOB_PatternComponent::ExecuteHammer()
 {
-	LOG_TRACE_INFO("[Pattern Hammer Telegragh]");
+	LOG_TRACE_INFO("[Pattern Hammer]");
 	
 	FTimerHandle HammerTimer;
 	GetWorld()->GetTimerManager().SetTimer(
@@ -87,7 +87,7 @@ void UOB_PatternComponent::ExecuteHammer()
 
 void UOB_PatternComponent::ExecuteRush()
 {
-	LOG_TRACE_INFO("[Pattern Rush Telegragh]");
+	LOG_TRACE_INFO("[Pattern Rush]");
 	
 	FTimerHandle HammerTimer;
 	GetWorld()->GetTimerManager().SetTimer(
@@ -103,7 +103,7 @@ void UOB_PatternComponent::ExecuteRush()
 
 void UOB_PatternComponent::ExecuteSlam()
 {
-	LOG_TRACE_INFO("[Pattern Slam Telegragh]");
+	LOG_TRACE_INFO("[Pattern Slam]");
 	
 	FTimerHandle HammerTimer;
 	GetWorld()->GetTimerManager().SetTimer(
@@ -119,7 +119,7 @@ void UOB_PatternComponent::ExecuteSlam()
 
 void UOB_PatternComponent::ExecuteCard()
 {
-	LOG_TRACE_INFO("[Pattern Card Telegragh]");
+	LOG_TRACE_INFO("[Pattern Card]");
 	
 	FTimerHandle HammerTimer;
 	GetWorld()->GetTimerManager().SetTimer(

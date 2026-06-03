@@ -133,7 +133,7 @@ void AOB_BossAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimul
 // FSM이 MOVE State 진입 시 호출
 void AOB_BossAIController::StartMove()
 {
-	LOG_TRACE_INFO(TEXT("Call StartMove"));
+	LOG_TRACE_INFO();
 	
 	FAIMoveRequest MoveRequest;
 	MoveRequest.SetGoalActor(FSMComp->GetTargetActor());
@@ -172,8 +172,7 @@ void AOB_BossAIController::OnFindTarget(AActor* TargetActor)
 		TeleportRandomlyAroundTarget(TargetLocation);
 		FSMComp -> SetState(EBossBattleState::MOVE);
 	}
-		
-} // IDLE 일때
+}
 
 
 void AOB_BossAIController::TeleportRandomlyAroundTarget(const FVector& TargetLocation)
@@ -209,7 +208,6 @@ bool AOB_BossAIController::FindSafetyLocation(const FVector& TargetLocation, FNa
 	}
 	
 	return false;
-	
 }
 
 void AOB_BossAIController::SetBossLocation(const FVector& TargetLocation, const FNavLocation& RandomNavLocation)
