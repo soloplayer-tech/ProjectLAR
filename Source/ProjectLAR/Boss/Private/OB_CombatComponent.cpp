@@ -121,18 +121,6 @@ void UOB_CombatComponent::OnDead()
 		if (FSMComp)
 		{
 			FSMComp->SetState(EBossBattleState::DEAD);
-			UE_LOG(LogTemp, Error,
-			    TEXT("GetOwner() = %s"),
-			    *GetNameSafe(GetOwner()));
-			
-			UE_LOG(LogTemp, Error,
-				TEXT("OwnerCharacter = %s"),
-				*GetNameSafe(OwnerCharacter));
-
-			UE_LOG(LogTemp, Error,
-				TEXT("OwnerCharacter Path = %s"),
-				*GetPathNameSafe(OwnerCharacter));
-
 			OwnerCharacter -> Destroy();
 		}
 	}

@@ -21,7 +21,10 @@ public:
 	AOB_BossAIController();
 	
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Boss|Sight")
-	double Sight_Radius = 1000.f;
+	float Sight_Radius = 3000.f;
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Boss|Sight")
+	float LoseSightRadius = 1000.f;
 	
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Boss|Sight")
 	float MinRadius = 300.f;  
@@ -32,7 +35,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BossControl")
 	float AcceptanceRadius = 200.f;
 	
+	UFUNCTION()
 	void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
+	
 	void StartMove();
 	void OnFindTarget(AActor* TargetActor);
 	void TeleportRandomlyAroundTarget(const FVector& TargetLocation);
