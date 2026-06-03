@@ -7,6 +7,7 @@
 #include "Perception/AIPerceptionTypes.h"
 #include "OB_BossAIController.generated.h"
 
+class UNavigationSystemV1;
 class UOB_BossFSMComponent;
 class AOB_BossCharacter;
 
@@ -19,14 +20,24 @@ public:
 	// Sets default values for this actor's properties
 	AOB_BossAIController();
 	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Boss|Sight")
+	double Sight_Radius = 1000.f;
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Boss|Sight")
+	float MinRadius = 300.f;  
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Boss|Sight")
+	float MaxRadius = 1000.f;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BossControl")
 	float AcceptanceRadius = 200.f;
 	
-	UFUNCTION()
 	void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
-	
-	UFUNCTION()
 	void StartMove();
+	void OnFindTarget(AActor* TargetActor);
+	void TeleportRandomlyAroundTarget(const FVector& TargetLocation);
+	void SetBossLocation(const FVector& TargetLocation, const FNavLocation& RandomNavLocation);
+	bool FindSafetyLocation(const FVector& TargetLocation, FNavLocation& SafetyLocation);
 
 	/** MoveToActor 변수 설명 인용 
 	 *  @brief Makes AI go toward specified Dest location, aborts any active path following
@@ -35,14 +46,21 @@ public:
 	 */
 
 private:
+	
 	UPROPERTY()
 	TObjectPtr<AOB_BossCharacter> BossCharacter;
 	
 	UPROPERTY()
 	UOB_BossFSMComponent* FSMComp;
 	
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY()
 	UAIPerceptionComponent* PerceptionComp;
+	
+	UPROPERTY()
+	UWorld* World;
+	
+	UPROPERTY()
+	UNavigationSystemV1* NavSystem;
 	
 	// void OnMoveCompleted(FAIRequestID RequestID,  EPathFollowingResult::Type Result) override;
 	

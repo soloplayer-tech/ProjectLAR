@@ -27,6 +27,7 @@ AOB_BossCharacter::AOB_BossCharacter()
 	
 	GetCharacterMovement() -> bOrientRotationToMovement = true;
 	GetCharacterMovement() -> RotationRate = FRotator(0.0f, 360.0f, 0.0f); // 초당 회전 속도
+	GetCharacterMovement() -> MaxWalkSpeed = 400.f;
 	bUseControllerRotationYaw = false;
 }
 

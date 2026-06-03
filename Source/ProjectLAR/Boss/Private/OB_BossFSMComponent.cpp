@@ -41,10 +41,6 @@ void UOB_BossFSMComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 }
 
 
-
-
-
-
 // 상태 진입 시 행동 정의 
 void UOB_BossFSMComponent::OnEnterState(EBossBattleState BossState)
 { // 상태 들어감
@@ -56,7 +52,7 @@ void UOB_BossFSMComponent::OnEnterState(EBossBattleState BossState)
 		case EBossBattleState::	IDLE:		if (OwnerController) { OwnerController -> StopMovement(); }		 break;
 		case EBossBattleState::	MOVE:		if (OwnerController) { OwnerController -> StartMove(); }		 break;
 		case EBossBattleState::	ATTACK:		if (OwnerController) {  }					 break;
-		case EBossBattleState::DEAD:		if (OwnerController) { OwnerController -> StopMovement(); }		 break;
+		case EBossBattleState:: DEAD:		if (OwnerController) { OwnerController -> StopMovement(); }		 break;
 		case EBossBattleState::	STUNNED:	break;	
 	}
 }
