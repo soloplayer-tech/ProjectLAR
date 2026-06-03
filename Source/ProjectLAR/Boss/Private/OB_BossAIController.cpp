@@ -157,12 +157,12 @@ void AOB_BossAIController::OnFindTarget(AActor* TargetActor)
 	
 	LOG_TRACE_INFO(TEXT("[ Find Target : %s]"), *TargetActor -> GetName());
 	
+	if (!BossCharacter) { LOG_TRACE_WARN("BossCharacter is Null !!"); return; }
+	
 	FVector TargetLocation = TargetActor->GetActorLocation();
 	FVector BossLocation = BossCharacter -> GetActorLocation();
 	
-	FVector DirectionToTarget = TargetLocation - BossLocation;
-	
-	if ( DirectionToTarget.Size() > Sight_Radius )
+	if ( FVector::Dist(TargetLocation,BossLocation) > Sight_Radius )
 	{
 		TeleportRandomlyAroundTarget(TargetLocation);
 		FSMComp -> SetState(EBossBattleState::MOVE);
