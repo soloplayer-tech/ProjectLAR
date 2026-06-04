@@ -73,11 +73,27 @@ void ULPlayerUIWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 	// =========================
 	// Dash Cooldown
 	// =========================
+	ALPlayerCharacter* PlayerCharacter = Cast<ALPlayerCharacter>(ObservedCharacter);
 
 	const bool bDashOnCooldown = ObservedCharacter->IsDashOnCooldown();
 	const float DashRemaining = ObservedCharacter->GetDashCooldownRemaining();
 	const float DashRatio = ObservedCharacter->GetDashCooldownRatio();
 
+	if (PB_PlayerHP)
+	{
+		PB_PlayerHP->SetPercent(PlayerCharacter->GetHPRatio());
+	}
+
+	if (PB_PlayerMP)
+	{
+		PB_PlayerMP->SetPercent(PlayerCharacter->GetManaRatio());
+	}
+
+	if (PB_IdentityGauge)
+	{
+		PB_IdentityGauge->SetPercent(PlayerCharacter->GetIdentityRatio());
+	}
+	
 	if (IMG_DashIcon)
 	{
 		IMG_DashIcon->SetVisibility(
@@ -100,7 +116,6 @@ void ULPlayerUIWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 	// Skill Cooldown
 	// =========================
 
-	ALPlayerCharacter* PlayerCharacter = Cast<ALPlayerCharacter>(ObservedCharacter);
 
 	if (!PlayerCharacter)
 	{

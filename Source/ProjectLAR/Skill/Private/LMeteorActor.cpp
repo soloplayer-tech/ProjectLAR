@@ -5,6 +5,7 @@
 #include "NiagaraFunctionLibrary.h"
 
 #include "DrawDebugHelpers.h"
+#include "LPlayerCharacter.h"
 #include "Engine/World.h"
 #include "Engine/EngineTypes.h"
 #include "ProjectLAR/Combat/Public/LDamageable.h"
@@ -65,7 +66,7 @@ void ALMeteorActor::Tick(float DeltaTime)
 	const float SafeFallDuration = FMath::Max(0.01f, FallDuration);
 	
 	const float Alpha = FMath::Clamp(
-		ElapsedTime / FallDuration,
+		ElapsedTime / SafeFallDuration,
 		0.0f,
 		1.0f
 	);
@@ -86,6 +87,13 @@ void ALMeteorActor::Tick(float DeltaTime)
 
 void ALMeteorActor::Impact()
 {
+	if (bImpactHandled)
+	{
+		return;
+	}
+
+	bImpactHandled = true;
+
 	// 장판 제거
 	if (WarningNiagaraComp)
 	{
@@ -164,6 +172,7 @@ void ALMeteorActor::ApplyImpactDamage()
 	}
 
 	TArray<AActor*> DamagedActors;
+	int32 DamagedCount = 0;
 
 	for (const FOverlapResult& Result : OverlapResults)
 	{
@@ -181,20 +190,35 @@ void ALMeteorActor::ApplyImpactDamage()
 
 		DamagedActors.Add(HitActor);
 
-		ApplyDamageToActor(HitActor);
+		const bool bDamageApplied = ApplyDamageToActor(HitActor);
+
+		if (bDamageApplied)
+		{
+			DamagedCount++;
+		}
+	}
+
+	ALPlayerCharacter* OwnerPlayer = Cast<ALPlayerCharacter>(GetOwner());
+
+	if (OwnerPlayer && DamagedCount > 0)
+	{
+		OwnerPlayer->OnSkillHitConfirmed(
+			ELPlayerSkillID::Meteor,
+			DamagedCount
+		);
 	}
 }
 
-void ALMeteorActor::ApplyDamageToActor(AActor* TargetActor)
+bool ALMeteorActor::ApplyDamageToActor(AActor* TargetActor)
 {
 	if (!TargetActor)
 	{
-		return;
+		return false;
 	}
 
 	if (!TargetActor->GetClass()->ImplementsInterface(ULDamageable::StaticClass()))
 	{
-		return;
+		return false;
 	}
 
 	AActor* DamageCauser = GetOwner();
@@ -204,18 +228,34 @@ void ALMeteorActor::ApplyDamageToActor(AActor* TargetActor)
 		DamageCauser = this;
 	}
 
+	float FinalDamage = MeteorDamage;
+
+	ALPlayerCharacter* OwnerPlayer =
+		Cast<ALPlayerCharacter>(DamageCauser);
+
+	if (OwnerPlayer)
+	{
+		FinalDamage = OwnerPlayer->GetFinalSkillDamage(
+			MeteorDamage,
+			ELPlayerSkillID::Meteor
+		);
+	}
+
 	ILDamageable::Execute_ReceiveSkillDamage(
 		TargetActor,
-		MeteorDamage,
+		FinalDamage,
 		DamageCauser,
 		ELPlayerSkillID::Meteor
 	);
+
 
 	UE_LOG(
 		LogTemp,
 		Warning,
 		TEXT("Meteor Impact Damage: %s / Damage: %.1f"),
 		*TargetActor->GetName(),
-		MeteorDamage
+		FinalDamage
 	);
+
+	return true;
 }

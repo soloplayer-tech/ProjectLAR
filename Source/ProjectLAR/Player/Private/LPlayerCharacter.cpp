@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "LPlayerCharacter.h"
-
+#include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "DrawDebugHelpers.h"
@@ -16,6 +16,335 @@
 ALPlayerCharacter::ALPlayerCharacter()
 {
 	bBlink = true;
+}
+
+void ALPlayerCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	CurrentHP = MaxHP;
+	CurrentMana = MaxMana;
+	CurrentIdentityGauge = 0.f;
+}
+
+void ALPlayerCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	
+	RegenerateMana(DeltaSeconds);
+}
+
+float ALPlayerCharacter::GetHPRatio() const
+{
+	if (MaxHP <= 0.f)
+	{
+		return 0.f;
+	}
+	
+	return FMath::Clamp(CurrentHP / MaxHP, 0.f, 1.f);
+}
+
+float ALPlayerCharacter::GetManaRatio() const
+{
+	if (MaxMana <= 0.f)
+	{
+		return 0.f;
+	}
+	
+	return FMath::Clamp(CurrentMana / MaxMana, 0.f, 1.f);
+}
+
+float ALPlayerCharacter::GetIdentityRatio() const
+{
+	if (MaxIdentityGauge <= 0.f)
+	{
+		return 0.f;
+	}
+	
+	return FMath::Clamp(CurrentIdentityGauge / MaxIdentityGauge, 0.f, 1.f);
+}
+
+float ALPlayerCharacter::GetCurrentHP() const
+{
+	return CurrentHP;
+}
+
+float ALPlayerCharacter::GetCurrentMana() const
+{
+	return CurrentMana;
+}
+
+float ALPlayerCharacter::GetCurrentIdentityGauge() const
+{
+	return CurrentIdentityGauge;
+}
+
+bool ALPlayerCharacter::CanSpendMana(float ManaCost) const
+{
+	return CurrentMana >= ManaCost;
+}
+
+bool ALPlayerCharacter::SpendMana(float ManaCost)
+{
+	if (ManaCost <= 0.f)
+	{
+		return true;
+	}
+	
+	if (!CanSpendMana(ManaCost))
+	{
+		return false;
+	}
+	
+	CurrentMana = FMath::Clamp(CurrentMana - ManaCost, 0.f, MaxMana);
+	
+	return true;
+}
+
+void ALPlayerCharacter::RecoverMana(float Amount)
+{
+	if (Amount <= 0.f)
+	{
+		return;
+	}
+	
+	CurrentMana = FMath::Clamp(CurrentMana + Amount, 0.f, MaxMana);
+}
+
+void ALPlayerCharacter::RegenerateMana(float DeltaTime)
+{
+	if (ManaRegenPerSecond <= 0.f)
+	{
+		return;
+	}
+	
+	if (CurrentMana >= MaxMana)
+	{
+		return;
+	}
+	
+	RecoverMana(ManaRegenPerSecond * DeltaTime);
+}
+
+void ALPlayerCharacter::AddIdentityGauge(float Amount)
+{
+	if (bIdentityActive)
+	{
+		return;
+	}
+
+	if (Amount <= 0.0f)
+	{
+		return;
+	}
+
+	CurrentIdentityGauge = FMath::Clamp(
+		CurrentIdentityGauge + Amount,
+		0.0f,
+		MaxIdentityGauge
+	);
+}
+
+float ALPlayerCharacter::GetIdentityGainBySkill(ELPlayerSkillID SkillID) const
+{
+	switch (SkillID)
+	{
+	case ELPlayerSkillID::Meteor:
+		return MeteorIdentityGain;
+
+	case ELPlayerSkillID::IceLance:
+		return IceLanceIdentityGain;
+
+	case ELPlayerSkillID::Thunder:
+		return ThunderIdentityGain;
+
+	case ELPlayerSkillID::Wind:
+		return WindIdentityGain;
+
+	case ELPlayerSkillID::BasicAttack:
+		return BasicAttackIdentityGain;
+
+	default:
+		return 0.0f;
+	}
+}
+
+float ALPlayerCharacter::GetIdentityAdditionalGainBySkill(ELPlayerSkillID SkillID) const
+{
+	switch (SkillID)
+	{
+	case ELPlayerSkillID::Meteor:
+		return MeteorAdditionalIdentityGainPerTarget;
+
+	case ELPlayerSkillID::IceLance:
+		return IceLanceAdditionalIdentityGainPerTarget;
+
+	case ELPlayerSkillID::Thunder:
+		return ThunderAdditionalIdentityGainPerTarget;
+
+	case ELPlayerSkillID::Wind:
+		return WindAdditionalIdentityGainPerTarget;
+
+	case ELPlayerSkillID::BasicAttack:
+		return BasicAttackAdditionalIdentityGainPerTarget;
+
+	default:
+		return 0.0f;
+	}
+}
+
+float ALPlayerCharacter::GetIdentityMaxGainBySkill(ELPlayerSkillID SkillID) const
+{
+	switch (SkillID)
+	{
+	case ELPlayerSkillID::Meteor:
+		return MeteorMaxIdentityGainPerCast;
+
+	case ELPlayerSkillID::IceLance:
+		return IceLanceMaxIdentityGainPerImpact;
+
+	case ELPlayerSkillID::Thunder:
+		return ThunderMaxIdentityGainPerStrike;
+
+	case ELPlayerSkillID::Wind:
+		return WindMaxIdentityGainPerCast;
+
+	case ELPlayerSkillID::BasicAttack:
+		return BasicAttackMaxIdentityGainPerAttack;
+
+	default:
+		return 0.0f;
+	}
+}
+
+float ALPlayerCharacter::GetIdentityGainByHitCount(
+	ELPlayerSkillID SkillID,
+	int32 HitCount
+) const
+{
+	if (HitCount <= 0)
+	{
+		return 0.0f;
+	}
+
+	const float BaseGain = GetIdentityGainBySkill(SkillID);
+	const float AdditionalGain = GetIdentityAdditionalGainBySkill(SkillID);
+	const float MaxGain = GetIdentityMaxGainBySkill(SkillID);
+	const int32 AdditionalHitCount = FMath::Max(0, HitCount - 1);
+	const float CalculatedGain = BaseGain + AdditionalGain * AdditionalHitCount;
+
+	if (MaxGain <= 0.0f)
+	{
+		return CalculatedGain;
+	}
+
+	return FMath::Min(CalculatedGain, MaxGain);
+}
+
+void ALPlayerCharacter::OnSkillHitConfirmed(
+	ELPlayerSkillID SkillID,
+	int32 HitCount
+)
+{
+	if (HitCount <= 0)
+	{
+		return;
+	}
+
+	if (bIdentityActive)
+	{
+		return;
+	}
+
+	const float GainAmount = GetIdentityGainByHitCount(SkillID, HitCount);
+
+	if (GainAmount <= 0.0f)
+	{
+		return;
+	}
+
+	AddIdentityGauge(GainAmount);
+
+	UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("Identity Gain: Skill=%s / HitCount=%d / Gain=%.1f / Current=%.1f"),
+		*UEnum::GetValueAsString(SkillID),
+		HitCount,
+		GainAmount,
+		CurrentIdentityGauge
+	);
+}
+
+bool ALPlayerCharacter::CanActivateIdentity() const
+{
+	return !bIdentityActive
+		&& CurrentIdentityGauge >= MaxIdentityGauge;
+}
+
+void ALPlayerCharacter::ActivateIdentity()
+{
+	if (!CanActivateIdentity())
+	{
+		return;
+	}
+	
+	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
+	{
+		MovementComp->StopMovementImmediately();
+	}
+	
+	
+	bIdentityActive = true;
+
+	// 게이지 소모
+	CurrentIdentityGauge = 0.0f;
+
+	// Z 발동 순간 스킬 쿨타임 초기화
+	ClearAllSkillCooldowns();
+	
+	// 아이덴티티 버프 VFX 시작
+	StartIdentityBuffVFX();
+	
+	BP_OnIdentityActivated();
+
+	GetWorldTimerManager().ClearTimer(IdentityTimerHandle);
+
+	GetWorldTimerManager().SetTimer(
+		IdentityTimerHandle,
+		this,
+		&ALPlayerCharacter::EndIdentity,
+		IdentityDuration,
+		false
+	);
+}
+
+void ALPlayerCharacter::EndIdentity()
+{
+	bIdentityActive = false;
+	StopIdentityBuffVFX();
+	
+	GetWorldTimerManager().ClearTimer(IdentityTimerHandle);
+}
+
+void ALPlayerCharacter::ClearAllSkillCooldowns()
+{
+	GetWorldTimerManager().ClearTimer(MeteorCooldownTimerHandle);
+	GetWorldTimerManager().ClearTimer(IceLanceCooldownTimerHandle);
+	GetWorldTimerManager().ClearTimer(ThunderCooldownTimerHandle);
+	GetWorldTimerManager().ClearTimer(WindCooldownTimerHandle);
+	GetWorldTimerManager().ClearTimer(MeteorRainCooldownTimerHandle);
+}
+
+
+bool ALPlayerCharacter::IsIdentityActive() const
+{
+	return bIdentityActive;
+}
+
+bool ALPlayerCharacter::IsIdentityFull() const
+{
+	return CurrentIdentityGauge >= MaxIdentityGauge;
 }
 
 void ALPlayerCharacter::Dash(const FVector& DashDirection)
@@ -79,6 +408,43 @@ void ALPlayerCharacter::EndBlink()
 	{
 		MeshComp->SetHiddenInGame(false, true);
 	}
+}
+
+void ALPlayerCharacter::StartIdentityBuffVFX()
+{
+	if (!IdentityBuffVFX)
+	{
+		return;
+	}
+
+	// 이미 켜져 있으면 중복 생성 방지
+	if (ActiveIdentityBuffVFXComponent)
+	{
+		return;
+	}
+
+	ActiveIdentityBuffVFXComponent =
+		UNiagaraFunctionLibrary::SpawnSystemAttached(
+			IdentityBuffVFX,
+			GetRootComponent(),
+			NAME_None,
+			IdentityBuffVFXLocationOffset,
+			IdentityBuffVFXRotationOffset,
+			EAttachLocation::KeepRelativeOffset,
+			true
+			
+		);
+}
+
+void ALPlayerCharacter::StopIdentityBuffVFX()
+{
+	if (!ActiveIdentityBuffVFXComponent)
+	{
+		return;
+	}
+
+	ActiveIdentityBuffVFXComponent->Deactivate();
+	ActiveIdentityBuffVFXComponent = nullptr;
 }
 
 void ALPlayerCharacter::BasicAttack(const FVector& TargetLocation)
@@ -149,6 +515,30 @@ void ALPlayerCharacter::EndSkill()
 	SetCurrentActionState(ELPlayerActionState::Idle);
 }
 
+// =======================================================================================
+// Skill ManaCost - SkillID 기준
+float ALPlayerCharacter::GetSkillManaCost(ELPlayerSkillID SkillID) const
+{
+	switch (SkillID)
+	{
+	case ELPlayerSkillID::Meteor:
+		return MeteorManaCost;
+
+	case ELPlayerSkillID::IceLance:
+		return IceLanceManaCost;
+
+	case ELPlayerSkillID::Thunder:
+		return ThunderManaCost;
+
+	case ELPlayerSkillID::Wind:
+		return WindManaCost;
+
+	case ELPlayerSkillID::BasicAttack:
+	case ELPlayerSkillID::None:
+	default:
+		return 0.0f;
+	}
+}
 // =======================================================================================
 // Skill Cooldown - SkillID 기준
 
@@ -499,17 +889,28 @@ bool ALPlayerCharacter::DoesSkillNeedCasting(ELPlayerSkillID SkillID) const
 
 float ALPlayerCharacter::GetSkillCastDuration(ELPlayerSkillID SkillID) const
 {
+	float BaseDuration = 0.0f;
+
 	switch (SkillID)
 	{
 	case ELPlayerSkillID::Meteor:
-		return MeteorCastDuration;
+		BaseDuration = MeteorCastDuration;
+		break;
 
 	case ELPlayerSkillID::Thunder:
-		return ThunderCastDuration;
+		BaseDuration = ThunderCastDuration;
+		break;
 
 	default:
 		return 0.0f;
 	}
+
+	if (bIdentityActive)
+	{
+		return BaseDuration * IdentityCastDurationMultiplier;
+	}
+
+	return BaseDuration;
 }
 
 // ======================================================================================
@@ -655,11 +1056,26 @@ void ALPlayerCharacter::FinishSkillCast()
 	// 실제 스킬 함수가 Skill 상태를 다시 잡을 수 있게 일단 Idle로 돌린다.
 	SetCurrentActionState(ELPlayerActionState::Idle);
 
+	const float ManaCost = GetSkillManaCost(FinishedSkillID);
+
+	if (!CanSpendMana(ManaCost))
+	{
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("Casting Finish Failed: Not Enough Mana / %s"),
+			*UEnum::GetValueAsString(FinishedSkillID)
+		);
+
+		return;
+	}
+
 	const bool bSkillSucceeded =
 		ExecuteSkillByID(FinishedSkillID, FinishedTargetLocation);
 
 	if (bSkillSucceeded)
 	{
+		SpendMana(ManaCost);
 		StartSkillCooldown(FinishedSkillID);
 	}
 
@@ -752,6 +1168,7 @@ void ALPlayerCharacter::ApplyBasicAttackDamage(const FVector& AttackDirection)
 	}
 
 	TArray<AActor*> DamagedActors;
+	int32 DamagedCount = 0;
 
 	for (const FOverlapResult& Result : OverlapResults)
 	{
@@ -769,11 +1186,21 @@ void ALPlayerCharacter::ApplyBasicAttackDamage(const FVector& AttackDirection)
 
 		DamagedActors.Add(HitActor);
 
-		ApplySkillDamageToActor(
+		const bool bDamageApplied = ApplySkillDamageToActor(
 			HitActor,
 			BasicAttackDamage,
 			ELPlayerSkillID::BasicAttack
 		);
+
+		if (bDamageApplied)
+		{
+			DamagedCount++;
+		}
+	}
+
+	if (DamagedCount > 0)
+	{
+		OnSkillHitConfirmed(ELPlayerSkillID::BasicAttack, DamagedCount);
 	}
 }
 
@@ -839,6 +1266,7 @@ void ALPlayerCharacter::ApplyWindDamage(const FVector& AttackDirection)
 	}
 
 	TArray<AActor*> DamagedActors;
+	int32 DamagedCount = 0;
 
 	for (const FOverlapResult& Result : OverlapResults)
 	{
@@ -856,15 +1284,25 @@ void ALPlayerCharacter::ApplyWindDamage(const FVector& AttackDirection)
 
 		DamagedActors.Add(HitActor);
 
-		ApplySkillDamageToActor(
+		const bool bDamageApplied = ApplySkillDamageToActor(
 			HitActor,
 			WindDamage,
 			ELPlayerSkillID::Wind
 		);
+
+		if (bDamageApplied)
+		{
+			DamagedCount++;
+		}
+	}
+
+	if (DamagedCount > 0)
+	{
+		OnSkillHitConfirmed(ELPlayerSkillID::Wind, DamagedCount);
 	}
 }
 
-void ALPlayerCharacter::ApplySkillDamageToActor(
+bool ALPlayerCharacter::ApplySkillDamageToActor(
 	AActor* TargetActor,
 	float Damage,
 	ELPlayerSkillID SkillID
@@ -872,22 +1310,24 @@ void ALPlayerCharacter::ApplySkillDamageToActor(
 {
 	if (!TargetActor)
 	{
-		return;
+		return false;
 	}
 
 	if (TargetActor == this)
 	{
-		return;
+		return false;
 	}
 
 	if (!TargetActor->GetClass()->ImplementsInterface(ULDamageable::StaticClass()))
 	{
-		return;
+		return false;
 	}
+
+	const float FinalDamage = GetFinalSkillDamage(Damage, SkillID);
 
 	ILDamageable::Execute_ReceiveSkillDamage(
 		TargetActor,
-		Damage,
+		FinalDamage,
 		this,
 		SkillID
 	);
@@ -898,8 +1338,22 @@ void ALPlayerCharacter::ApplySkillDamageToActor(
 		TEXT("Skill Damage Applied: %s / Skill: %s / Damage: %.1f"),
 		*TargetActor->GetName(),
 		*UEnum::GetValueAsString(SkillID),
-		Damage
+		FinalDamage
 	);
+
+	return true;
+}
+
+float ALPlayerCharacter::GetFinalSkillDamage(
+	float BaseDamage,
+	ELPlayerSkillID SkillID) const
+{
+	if (bIdentityActive)
+	{
+		return BaseDamage * IdentityDamageMultiplier;
+	}
+
+	return BaseDamage;
 }
 
 float ALPlayerCharacter::GetCastRemaining() const
@@ -955,6 +1409,14 @@ void ALPlayerCharacter::UseSkill(
 	{
 		return;
 	}
+	
+	const float ManaCost = GetSkillManaCost(EquippedSkillID);
+	
+	if (!CanSpendMana(ManaCost))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Not Enough Mana"));
+		return;
+	}
 
 	if (DoesSkillNeedCasting(EquippedSkillID))
 	{
@@ -972,6 +1434,7 @@ void ALPlayerCharacter::UseSkill(
 	
 	if (bSkillSucceeded)
 	{
+		SpendMana(ManaCost);
 		StartSkillCooldown(EquippedSkillID);
 	}
 }
