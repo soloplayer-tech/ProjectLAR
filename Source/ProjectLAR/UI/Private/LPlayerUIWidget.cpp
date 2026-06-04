@@ -7,7 +7,9 @@
 #include "ProjectLAR/Player/Public/LPlayerCharacter.h"
 #include "ProjectLAR/Player/Public/LPlayerCharacterBase.h"
 
-void ULPlayerUIWidget::SetObservedCharacter(ALPlayerCharacterBase* InCharacter)
+void ULPlayerUIWidget::SetObservedCharacter(
+	ALPlayerCharacterBase* InCharacter
+)
 {
 	ObservedCharacter = InCharacter;
 }
@@ -16,58 +18,48 @@ void ULPlayerUIWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// 대쉬 아이콘은 네가 원한 대로 쿨타임 중에만 보이게 한다.
 	if (IMG_DashIcon)
 	{
 		IMG_DashIcon->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
-	// Dash
-	DashCooldownMaterial = InitCooldownImage(IMG_DashCooldownRadial.Get());
+	DashCooldownMaterial =
+		InitCooldownImage(IMG_DashCooldownRadial.Get());
+
 	InitCooldownText(TXT_DashCooldown.Get());
 
-	// Q
-	QCooldownMaterial = InitCooldownImage(IMG_QCooldownRadial.Get());
-	InitCooldownText(TXT_QCooldown.Get());
-
-	// W
-	WCooldownMaterial = InitCooldownImage(IMG_WCooldownRadial.Get());
-	InitCooldownText(TXT_WCooldown.Get());
-
-	// E
-	ECooldownMaterial = InitCooldownImage(IMG_ECooldownRadial.Get());
-	InitCooldownText(TXT_ECooldown.Get());
-
-	// R
-	RCooldownMaterial = InitCooldownImage(IMG_RCooldownRadial.Get());
-	InitCooldownText(TXT_RCooldown.Get());
-	
 	if (PB_CastProgress)
 	{
 		PB_CastProgress->SetVisibility(ESlateVisibility::Collapsed);
 		PB_CastProgress->SetPercent(0.0f);
 	}
-	
+
 	if (TXT_CastName)
 	{
 		TXT_CastName->SetVisibility(ESlateVisibility::Collapsed);
 		TXT_CastName->SetText(FText::GetEmpty());
 	}
-	
+
 	if (TXT_CastRemaining)
 	{
 		TXT_CastRemaining->SetVisibility(ESlateVisibility::Collapsed);
 		TXT_CastRemaining->SetText(FText::GetEmpty());
 	}
-	
+
 	if (IMG_IdentityFlameOverlay)
 	{
-		IMG_IdentityFlameOverlay->SetVisibility(ESlateVisibility::Collapsed);
+		IMG_IdentityFlameOverlay->SetVisibility(
+			ESlateVisibility::Collapsed
+		);
+
 		IMG_IdentityFlameOverlay->SetRenderOpacity(0.0f);
 	}
 }
 
-void ULPlayerUIWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+void ULPlayerUIWidget::NativeTick(
+	const FGeometry& MyGeometry,
+	float InDeltaTime
+)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
@@ -76,20 +68,14 @@ void ULPlayerUIWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 		return;
 	}
 
-	// =========================
-	// Dash Cooldown
-	// =========================
-	ALPlayerCharacter* PlayerCharacter = Cast<ALPlayerCharacter>(ObservedCharacter);
-
-	const bool bDashOnCooldown = ObservedCharacter->IsDashOnCooldown();
-	const float DashRemaining = ObservedCharacter->GetDashCooldownRemaining();
-	const float DashRatio = ObservedCharacter->GetDashCooldownRatio();
+	ALPlayerCharacter* PlayerCharacter =
+		Cast<ALPlayerCharacter>(ObservedCharacter);
 
 	if (!PlayerCharacter)
 	{
 		return;
 	}
-	
+
 	if (PB_PlayerHP)
 	{
 		PB_PlayerHP->SetPercent(PlayerCharacter->GetHPRatio());
@@ -102,11 +88,22 @@ void ULPlayerUIWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 
 	if (PB_IdentityGauge)
 	{
-		PB_IdentityGauge->SetPercent(PlayerCharacter->GetIdentityRatio());
+		PB_IdentityGauge->SetPercent(
+			PlayerCharacter->GetIdentityRatio()
+		);
 	}
-	
+
 	UpdateIdentityActiveUI(PlayerCharacter);
-	
+
+	const bool bDashOnCooldown =
+		ObservedCharacter->IsDashOnCooldown();
+
+	const float DashRemaining =
+		ObservedCharacter->GetDashCooldownRemaining();
+
+	const float DashRatio =
+		ObservedCharacter->GetDashCooldownRatio();
+
 	if (IMG_DashIcon)
 	{
 		IMG_DashIcon->SetVisibility(
@@ -125,59 +122,20 @@ void ULPlayerUIWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 		DashRatio
 	);
 
-	// =========================
-	// Skill Cooldown
-	// =========================
-
-
-	if (!PlayerCharacter)
-	{
-		return;
-	}
-
-	/*// Q Slot
-	UpdateSkillSlotCooldownUI(
-		ELPlayerSkillSlot::Q,
-		IMG_QCooldownRadial.Get(),
-		QCooldownMaterial.Get(),
-		TXT_QCooldown.Get()
-	);
-
-	// W Slot
-	UpdateSkillSlotCooldownUI(
-		ELPlayerSkillSlot::W,
-		IMG_WCooldownRadial.Get(),
-		WCooldownMaterial.Get(),
-		TXT_WCooldown.Get()
-	);
-
-	// E Slot
-	UpdateSkillSlotCooldownUI(
-		ELPlayerSkillSlot::E,
-		IMG_ECooldownRadial.Get(),
-		ECooldownMaterial.Get(),
-		TXT_ECooldown.Get()
-	);
-
-	// R Slot
-	UpdateSkillSlotCooldownUI(
-		ELPlayerSkillSlot::R,
-		IMG_RCooldownRadial.Get(),
-		RCooldownMaterial.Get(),
-		TXT_RCooldown.Get()
-	);*/
-	
 	UpdateCastBarUI();
 }
 
-UMaterialInstanceDynamic* ULPlayerUIWidget::InitCooldownImage(UImage* CooldownImage)
+UMaterialInstanceDynamic* ULPlayerUIWidget::InitCooldownImage(
+	UImage* CooldownImage
+)
 {
 	if (!CooldownImage)
 	{
 		return nullptr;
 	}
 
-	UMaterialInstanceDynamic* DynamicMaterial = CooldownImage->GetDynamicMaterial();
+	UMaterialInstanceDynamic* DynamicMaterial =
+		CooldownImage->GetDynamicMaterial();
 
 	CooldownImage->SetVisibility(ESlateVisibility::Collapsed);
 
@@ -190,36 +148,6 @@ UMaterialInstanceDynamic* ULPlayerUIWidget::InitCooldownImage(UImage* CooldownIm
 	}
 
 	return DynamicMaterial;
-}
-
-void ULPlayerUIWidget::UpdateIdentityActiveUI(ALPlayerCharacter* PlayerCharacter)
-{
-	if (!PlayerCharacter)
-	{
-		return;
-	}
-
-	const bool bIdentityActive = PlayerCharacter->IsIdentityActive();
-
-	if (IMG_IdentityFlameOverlay)
-	{
-		if (bIdentityActive)
-		{
-			IMG_IdentityFlameOverlay->SetVisibility(
-				ESlateVisibility::HitTestInvisible
-			);
-
-			IMG_IdentityFlameOverlay->SetRenderOpacity(1.0f);
-		}
-		else
-		{
-			IMG_IdentityFlameOverlay->SetVisibility(
-				ESlateVisibility::Collapsed
-			);
-
-			IMG_IdentityFlameOverlay->SetRenderOpacity(0.0f);
-		}
-	}
 }
 
 void ULPlayerUIWidget::InitCooldownText(UTextBlock* CooldownText)
@@ -279,41 +207,39 @@ void ULPlayerUIWidget::UpdateCooldownUI(
 	}
 }
 
-void ULPlayerUIWidget::UpdateSkillSlotCooldownUI(
-	ELPlayerSkillSlot SkillSlot,
-	UImage* CooldownImage,
-	UMaterialInstanceDynamic* CooldownMaterial,
-	UTextBlock* CooldownText
+void ULPlayerUIWidget::UpdateIdentityActiveUI(
+	ALPlayerCharacter* PlayerCharacter
 )
 {
-	ALPlayerCharacter* PlayerCharacter =
-		Cast<ALPlayerCharacter>(ObservedCharacter);
-
 	if (!PlayerCharacter)
 	{
 		return;
 	}
 
-	const ELPlayerSkillID SkillID =
-		PlayerCharacter->GetEquippedSkillID(SkillSlot);
+	const bool bIdentityActive =
+		PlayerCharacter->IsIdentityActive();
 
-	const bool bOnCooldown =
-		PlayerCharacter->IsSkillIDOnCooldown(SkillID);
+	if (!IMG_IdentityFlameOverlay)
+	{
+		return;
+	}
 
-	const float Remaining =
-		PlayerCharacter->GetSkillIDCooldownRemaining(SkillID);
+	if (bIdentityActive)
+	{
+		IMG_IdentityFlameOverlay->SetVisibility(
+			ESlateVisibility::HitTestInvisible
+		);
 
-	const float Ratio =
-		PlayerCharacter->GetSkillIDCooldownRatio(SkillID);
+		IMG_IdentityFlameOverlay->SetRenderOpacity(1.0f);
+	}
+	else
+	{
+		IMG_IdentityFlameOverlay->SetVisibility(
+			ESlateVisibility::Collapsed
+		);
 
-	UpdateCooldownUI(
-		CooldownImage,
-		CooldownMaterial,
-		CooldownText,
-		bOnCooldown,
-		Remaining,
-		Ratio
-	);
+		IMG_IdentityFlameOverlay->SetRenderOpacity(0.0f);
+	}
 }
 
 void ULPlayerUIWidget::UpdateCastBarUI()

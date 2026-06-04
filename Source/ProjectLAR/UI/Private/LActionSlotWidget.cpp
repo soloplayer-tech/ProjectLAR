@@ -1,13 +1,14 @@
 #include "ProjectLAR/UI/Public/LActionSlotWidget.h"
 
 #include "Blueprint/DragDropOperation.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "Engine/Texture2D.h"
+#include "InputCoreTypes.h"
 #include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInstanceDynamic.h"
-#include "Blueprint/WidgetBlueprintLibrary.h"
-#include "InputCoreTypes.h"
+
 #include "ProjectLAR/Player/Public/LPlayerCharacter.h"
 #include "ProjectLAR/UI/Public/LUIDragDropOperation.h"
 
@@ -32,27 +33,7 @@ void ULActionSlotWidget::NativeConstruct()
 		IMG_SlotIcon->SetRenderOpacity(0.0f);
 	}
 
-	if (IMG_CooldownRadial)
-	{
-		CooldownMaterial = IMG_CooldownRadial->GetDynamicMaterial();
-
-		IMG_CooldownRadial->SetVisibility(ESlateVisibility::Collapsed);
-
-		if (CooldownMaterial)
-		{
-			CooldownMaterial->SetScalarParameterValue(
-				TEXT("CooldownPercent"),
-				0.0f
-			);
-		}
-	}
-
-	if (TXT_Cooldown)
-	{
-		TXT_Cooldown->SetVisibility(ESlateVisibility::Collapsed);
-		TXT_Cooldown->SetText(FText::GetEmpty());
-	}
-
+	InitCooldownUI();
 	RefreshSlotFromPlayer();
 }
 
@@ -110,19 +91,135 @@ FReply ULActionSlotWidget::NativeOnMouseButtonDown(
 		return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
 	}
 
-	UE_LOG(
-		LogTemp,
-		Warning,
-		TEXT("ActionSlot Mouse Down / Slot=%s / Skill=%s"),
-		*UEnum::GetValueAsString(SlotKey),
-		*UEnum::GetValueAsString(CurrentSkillID)
-	);
-
 	return UWidgetBlueprintLibrary::DetectDragIfPressed(
 		InMouseEvent,
 		this,
 		EKeys::LeftMouseButton
 	).NativeReply;
+}
+
+void ULActionSlotWidget::NativeOnDragDetected(
+	const FGeometry& InGeometry,
+	const FPointerEvent& InMouseEvent,
+	UDragDropOperation*& OutOperation
+)
+{
+	Super::NativeOnDragDetected(
+		InGeometry,
+		InMouseEvent,
+		OutOperation
+	);
+
+	if (SlotType != ELActionSlotType::Skill)
+	{
+		return;
+	}
+
+	ELPlayerSkillSlot PlayerSkillSlot = ELPlayerSkillSlot::Q;
+
+	if (!TryConvertToPlayerSkillSlot(PlayerSkillSlot))
+	{
+		return;
+	}
+
+	ALPlayerCharacter* PlayerCharacter = GetPlayerCharacter();
+
+	if (!PlayerCharacter)
+	{
+		return;
+	}
+
+	const ELPlayerSkillID CurrentSkillID =
+		PlayerCharacter->GetEquippedSkillID(PlayerSkillSlot);
+
+	if (CurrentSkillID == ELPlayerSkillID::None)
+	{
+		return;
+	}
+
+	ULUIDragDropOperation* DragOperation =
+		NewObject<ULUIDragDropOperation>();
+
+	if (!DragOperation)
+	{
+		return;
+	}
+
+	DragOperation->PayloadType = ELDragPayloadType::Skill;
+	DragOperation->SkillID = CurrentSkillID;
+	DragOperation->IconTexture = GetSkillIconTexture(CurrentSkillID);
+	DragOperation->bFromActionSlot = true;
+	DragOperation->SourceSlotKey = SlotKey;
+
+	DragOperation->DefaultDragVisual = this;
+	DragOperation->Pivot = EDragPivot::MouseDown;
+
+	OutOperation = DragOperation;
+
+	UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("ActionSlot Drag Started / SourceSlot=%s / Skill=%s"),
+		*UEnum::GetValueAsString(SlotKey),
+		*UEnum::GetValueAsString(CurrentSkillID)
+	);
+}
+
+void ULActionSlotWidget::NativeOnDragCancelled(
+	const FDragDropEvent& InDragDropEvent,
+	UDragDropOperation* InOperation
+)
+{
+	Super::NativeOnDragCancelled(
+		InDragDropEvent,
+		InOperation
+	);
+
+	ULUIDragDropOperation* DragOperation =
+		Cast<ULUIDragDropOperation>(InOperation);
+
+	if (!DragOperation)
+	{
+		return;
+	}
+
+	if (!DragOperation->bFromActionSlot)
+	{
+		return;
+	}
+
+	if (DragOperation->SourceSlotKey != SlotKey)
+	{
+		return;
+	}
+
+	ELPlayerSkillSlot SourceSkillSlot = ELPlayerSkillSlot::Q;
+
+	if (!TryConvertToPlayerSkillSlot(SourceSkillSlot))
+	{
+		return;
+	}
+
+	ALPlayerCharacter* PlayerCharacter = GetPlayerCharacter();
+
+	if (!PlayerCharacter)
+	{
+		return;
+	}
+
+	PlayerCharacter->EquipSkillToSlot(
+		SourceSkillSlot,
+		ELPlayerSkillID::None
+	);
+
+	RefreshSlotFromPlayer();
+
+	UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("ActionSlot Drag Cancelled / Clear Slot=%s"),
+		*UEnum::GetValueAsString(SlotKey)
+	);
 }
 
 bool ULActionSlotWidget::NativeOnDrop(
@@ -254,6 +351,26 @@ bool ULActionSlotWidget::TryConvertToPlayerSkillSlot(
 		OutSkillSlot = ELPlayerSkillSlot::R;
 		return true;
 
+	case ELActionSlotKey::Skill_A:
+		OutSkillSlot = ELPlayerSkillSlot::A;
+		return true;
+
+	case ELActionSlotKey::Skill_S:
+		OutSkillSlot = ELPlayerSkillSlot::S;
+		return true;
+
+	case ELActionSlotKey::Skill_D:
+		OutSkillSlot = ELPlayerSkillSlot::D;
+		return true;
+
+	case ELActionSlotKey::Skill_F:
+		OutSkillSlot = ELPlayerSkillSlot::F;
+		return true;
+
+	case ELActionSlotKey::Ultimate_V:
+		OutSkillSlot = ELPlayerSkillSlot::V;
+		return true;
+
 	default:
 		return false;
 	}
@@ -352,6 +469,35 @@ UTexture2D* ULActionSlotWidget::GetSkillIconTexture(
 	}
 }
 
+void ULActionSlotWidget::InitCooldownUI()
+{
+	if (IMG_CooldownRadial)
+	{
+		CooldownMaterial = IMG_CooldownRadial->GetDynamicMaterial();
+
+		IMG_CooldownRadial->SetVisibility(
+			ESlateVisibility::Collapsed
+		);
+
+		if (CooldownMaterial)
+		{
+			CooldownMaterial->SetScalarParameterValue(
+				TEXT("CooldownPercent"),
+				0.0f
+			);
+		}
+	}
+
+	if (TXT_Cooldown)
+	{
+		TXT_Cooldown->SetVisibility(
+			ESlateVisibility::Collapsed
+		);
+
+		TXT_Cooldown->SetText(FText::GetEmpty());
+	}
+}
+
 void ULActionSlotWidget::UpdateCooldownUI(
 	ALPlayerCharacter* PlayerCharacter,
 	ELPlayerSkillID SkillID
@@ -361,12 +507,17 @@ void ULActionSlotWidget::UpdateCooldownUI(
 	{
 		if (IMG_CooldownRadial)
 		{
-			IMG_CooldownRadial->SetVisibility(ESlateVisibility::Collapsed);
+			IMG_CooldownRadial->SetVisibility(
+				ESlateVisibility::Collapsed
+			);
 		}
 
 		if (TXT_Cooldown)
 		{
-			TXT_Cooldown->SetVisibility(ESlateVisibility::Collapsed);
+			TXT_Cooldown->SetVisibility(
+				ESlateVisibility::Collapsed
+			);
+
 			TXT_Cooldown->SetText(FText::GetEmpty());
 		}
 
@@ -423,7 +574,10 @@ void ULActionSlotWidget::UpdateCooldownUI(
 		}
 		else
 		{
-			TXT_Cooldown->SetVisibility(ESlateVisibility::Collapsed);
+			TXT_Cooldown->SetVisibility(
+				ESlateVisibility::Collapsed
+			);
+
 			TXT_Cooldown->SetText(FText::GetEmpty());
 		}
 	}
@@ -499,128 +653,3 @@ void ULActionSlotWidget::UpdateSlotLabel()
 
 	TXT_SlotKey->SetText(FText::FromString(SlotText));
 }
-
-void ULActionSlotWidget::NativeOnDragCancelled(
-	const FDragDropEvent& InDragDropEvent,
-	UDragDropOperation* InOperation
-)
-{
-	Super::NativeOnDragCancelled(
-		InDragDropEvent,
-		InOperation
-	);
-
-	ULUIDragDropOperation* DragOperation =
-		Cast<ULUIDragDropOperation>(InOperation);
-
-	if (!DragOperation)
-	{
-		return;
-	}
-
-	if (!DragOperation->bFromActionSlot)
-	{
-		return;
-	}
-
-	if (DragOperation->SourceSlotKey != SlotKey)
-	{
-		return;
-	}
-
-	ELPlayerSkillSlot SourceSkillSlot = ELPlayerSkillSlot::Q;
-
-	if (!TryConvertToPlayerSkillSlot(SourceSkillSlot))
-	{
-		return;
-	}
-
-	ALPlayerCharacter* PlayerCharacter = GetPlayerCharacter();
-
-	if (!PlayerCharacter)
-	{
-		return;
-	}
-
-	PlayerCharacter->EquipSkillToSlot(
-		SourceSkillSlot,
-		ELPlayerSkillID::None
-	);
-
-	RefreshSlotFromPlayer();
-
-	UE_LOG(
-		LogTemp,
-		Warning,
-		TEXT("ActionSlot Drag Cancelled / Clear Slot=%s"),
-		*UEnum::GetValueAsString(SlotKey)
-	);
-}
-
-void ULActionSlotWidget::NativeOnDragDetected(
-	const FGeometry& InGeometry,
-	const FPointerEvent& InMouseEvent,
-	UDragDropOperation*& OutOperation
-)
-{
-	Super::NativeOnDragDetected(
-		InGeometry,
-		InMouseEvent,
-		OutOperation
-	);
-
-	if (SlotType != ELActionSlotType::Skill)
-	{
-		return;
-	}
-
-	ELPlayerSkillSlot PlayerSkillSlot = ELPlayerSkillSlot::Q;
-
-	if (!TryConvertToPlayerSkillSlot(PlayerSkillSlot))
-	{
-		return;
-	}
-
-	ALPlayerCharacter* PlayerCharacter = GetPlayerCharacter();
-
-	if (!PlayerCharacter)
-	{
-		return;
-	}
-
-	const ELPlayerSkillID CurrentSkillID =
-		PlayerCharacter->GetEquippedSkillID(PlayerSkillSlot);
-
-	if (CurrentSkillID == ELPlayerSkillID::None)
-	{
-		return;
-	}
-
-	ULUIDragDropOperation* DragOperation =
-		NewObject<ULUIDragDropOperation>();
-
-	if (!DragOperation)
-	{
-		return;
-	}
-
-	DragOperation->PayloadType = ELDragPayloadType::Skill;
-	DragOperation->SkillID = CurrentSkillID;
-	DragOperation->IconTexture = GetSkillIconTexture(CurrentSkillID);
-	DragOperation->bFromActionSlot = true;
-	DragOperation->SourceSlotKey = SlotKey;
-
-	DragOperation->DefaultDragVisual = this;
-	DragOperation->Pivot = EDragPivot::MouseDown;
-
-	OutOperation = DragOperation;
-
-	UE_LOG(
-		LogTemp,
-		Warning,
-		TEXT("ActionSlot Drag Started / SourceSlot=%s / Skill=%s"),
-		*UEnum::GetValueAsString(SlotKey),
-		*UEnum::GetValueAsString(CurrentSkillID)
-	);
-}
-

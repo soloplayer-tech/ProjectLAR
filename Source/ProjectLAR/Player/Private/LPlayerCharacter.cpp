@@ -4,8 +4,8 @@
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "DrawDebugHelpers.h"
-#include "Components/SlateWrapperTypes.h"
+// #include "DrawDebugHelpers.h"
+// #include "Components/SlateWrapperTypes.h"
 #include "Engine/World.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/OverlapResult.h"
@@ -801,6 +801,18 @@ ELPlayerSkillID ALPlayerCharacter::GetEquippedSkillID(ELPlayerSkillSlot SkillSlo
 
 	case ELPlayerSkillSlot::V:
 		return VSlotSkill;
+		
+	case ELPlayerSkillSlot::A:
+		return ASlotSkill;
+		
+	case ELPlayerSkillSlot::S:
+		return SSlotSkill;
+		
+	case ELPlayerSkillSlot::D:
+		return DSlotSkill;
+		
+	case ELPlayerSkillSlot::F:
+		return FSlotSkill;
 
 	default:
 		return ELPlayerSkillID::None;
@@ -833,6 +845,23 @@ void ALPlayerCharacter::SetEquippedSkillID(
 		VSlotSkill = SkillID;
 		break;
 		
+	case ELPlayerSkillSlot::A:
+		ASlotSkill = SkillID;
+		break;
+		
+	case ELPlayerSkillSlot::S:
+		SSlotSkill = SkillID;
+		break;
+		
+	case ELPlayerSkillSlot::D:
+		DSlotSkill = SkillID;
+		break;
+		
+	case ELPlayerSkillSlot::F:
+		FSlotSkill = SkillID;
+		break;
+		
+		
 	default:
 		break;
 	}
@@ -862,7 +891,12 @@ void ALPlayerCharacter::EquipSkillToSlot(
 		ELPlayerSkillSlot::Q,
 		ELPlayerSkillSlot::W,
 		ELPlayerSkillSlot::E,
-		ELPlayerSkillSlot::R
+		ELPlayerSkillSlot::R,
+		ELPlayerSkillSlot::A,
+		ELPlayerSkillSlot::S,
+		ELPlayerSkillSlot::D,
+		ELPlayerSkillSlot::F,
+		ELPlayerSkillSlot::V,
 	};
 
 	for (const ELPlayerSkillSlot ExistingSlot : SkillSlots)

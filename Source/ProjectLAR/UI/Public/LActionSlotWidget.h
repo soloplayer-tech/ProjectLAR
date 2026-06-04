@@ -29,16 +29,10 @@ protected:
 	virtual void NativePreConstruct() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
-	virtual bool NativeOnDrop(
-		const FGeometry& InGeometry,
-		const FDragDropEvent& InDragDropEvent,
-		UDragDropOperation* InOperation
-	) override;
-
 	virtual FReply NativeOnMouseButtonDown(
-	const FGeometry& InGeometry,
-	const FPointerEvent& InMouseEvent
-) override;
+		const FGeometry& InGeometry,
+		const FPointerEvent& InMouseEvent
+	) override;
 
 	virtual void NativeOnDragDetected(
 		const FGeometry& InGeometry,
@@ -50,7 +44,13 @@ protected:
 		const FDragDropEvent& InDragDropEvent,
 		UDragDropOperation* InOperation
 	) override;
-	
+
+	virtual bool NativeOnDrop(
+		const FGeometry& InGeometry,
+		const FDragDropEvent& InDragDropEvent,
+		UDragDropOperation* InOperation
+	) override;
+
 private:
 	bool CanAcceptPayload(const ULUIDragDropOperation* DragOperation) const;
 
@@ -58,26 +58,25 @@ private:
 		ELPlayerSkillSlot& OutSkillSlot
 	) const;
 
-	void UpdateSlotLabel();
-
-
 	ALPlayerCharacter* GetPlayerCharacter() const;
 
 	void RefreshSlotFromPlayer();
+	void UpdateSlotLabel();
 
 	void SetSlotIcon(UTexture2D* IconTexture);
-
 	UTexture2D* GetSkillIconTexture(ELPlayerSkillID SkillID) const;
 
-	void UpdateCooldownUI(ALPlayerCharacter* PlayerCharacter, ELPlayerSkillID SkillID);
+	void InitCooldownUI();
+	void UpdateCooldownUI(
+		ALPlayerCharacter* PlayerCharacter,
+		ELPlayerSkillID SkillID
+	);
 
 protected:
-	// 이 슬롯이 Q/W/E/R/A/S/D/F/V/1/2/3/4 중 무엇인지
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Action Slot")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action Slot", meta = (ExposeOnSpawn = true))
 	ELActionSlotKey SlotKey = ELActionSlotKey::None;
 
-	// 이 슬롯이 Skill / Ultimate / Item 중 무엇을 받을 수 있는지
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Action Slot")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action Slot", meta = (ExposeOnSpawn = true))
 	ELActionSlotType SlotType = ELActionSlotType::Skill;
 
 	UPROPERTY(meta = (BindWidgetOptional))
@@ -85,10 +84,6 @@ protected:
 
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> TXT_SlotKey;
-
-	// =========================
-	// Cooldown UI
-	// =========================
 
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UImage> IMG_CooldownRadial;
@@ -99,11 +94,8 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UMaterialInstanceDynamic> CooldownMaterial;
 
-	// =========================
-	// Skill Icon Textures
-	// WBP_ActionSlot 클래스 기본값에서 넣어두면 됨
-	// =========================
-
+	// 임시 방식.
+	// 나중에 DataTable/DataAsset으로 옮기기 전까지 사용.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Action Slot|Skill Icon")
 	TObjectPtr<UTexture2D> MeteorIconTexture;
 

@@ -80,7 +80,22 @@ private:
 	TObjectPtr<UInputAction> SkillEAction;
 	
 	UPROPERTY(EditAnywhere, Category = "Skill")
+	TObjectPtr<UInputAction> SkillAAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Skill")
+	TObjectPtr<UInputAction> SkillSAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Skill")
+	TObjectPtr<UInputAction> SkillDAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Skill")
+	TObjectPtr<UInputAction> SkillFAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Skill")
 	TObjectPtr<UInputAction> SkillRAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Skill")
+	TObjectPtr<UInputAction> SkillVAction;
 	
 	
 	UPROPERTY(EditAnywhere, Category = "UI")
@@ -102,6 +117,12 @@ private:
 	void SkillWInput();
 	void SkillEInput();
 	void SkillRInput();
+	void SkillAInput();
+	void SkillSInput();
+	void SkillDInput();
+	void SkillFInput();
+	void SkillVInput();
+	
 	
 	void HandleSkillInput(ELPlayerSkillSlot SkillSlot);
 	

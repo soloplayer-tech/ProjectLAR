@@ -120,6 +120,56 @@ void ALPlayerController::SetupInputComponent()
 				);
 		}
 		
+		if (SkillAAction)
+		{
+			EnhancedInput->BindAction(
+				SkillAAction,
+				ETriggerEvent::Started,
+				this,
+				&ALPlayerController::SkillAInput
+				);
+		}
+		
+		if (SkillSAction)
+		{
+			EnhancedInput->BindAction(
+				SkillSAction,
+				ETriggerEvent::Started,
+				this,
+				&ALPlayerController::SkillSInput
+				);
+		}
+		
+		if (SkillDAction)
+		{
+			EnhancedInput->BindAction(
+				SkillDAction,
+				ETriggerEvent::Started,
+				this,
+				&ALPlayerController::SkillDInput
+				);
+		}
+		
+		if (SkillFAction)
+		{
+			EnhancedInput->BindAction(
+				SkillFAction,
+				ETriggerEvent::Started,
+				this,
+				&ALPlayerController::SkillFInput
+				);
+		}
+		
+		if (SkillVAction)
+		{
+			EnhancedInput->BindAction(
+				SkillVAction,
+				ETriggerEvent::Started,
+				this,
+				&ALPlayerController::SkillVInput
+				);
+		}
+		
 		if (IdentityAction)
 		{
 			EnhancedInput->BindAction(
@@ -395,6 +445,32 @@ void ALPlayerController::SkillRInput()
 	HandleSkillInput(ELPlayerSkillSlot::R);
 }
 
+void ALPlayerController::SkillAInput()
+{
+	HandleSkillInput(ELPlayerSkillSlot::A);
+}
+
+void ALPlayerController::SkillSInput()
+{
+	HandleSkillInput(ELPlayerSkillSlot::S);
+}
+
+void ALPlayerController::SkillDInput()
+{
+	HandleSkillInput(ELPlayerSkillSlot::D);
+}
+
+void ALPlayerController::SkillFInput()
+{
+	HandleSkillInput(ELPlayerSkillSlot::F);
+}
+
+void ALPlayerController::SkillVInput()
+{
+	HandleSkillInput(ELPlayerSkillSlot::V);
+
+}
+
 void ALPlayerController::HandleSkillInput(ELPlayerSkillSlot SkillSlot)
 {
 	ALPlayerCharacter* PlayerCharacter = Cast<ALPlayerCharacter>(GetPawn());
@@ -409,16 +485,16 @@ void ALPlayerController::HandleSkillInput(ELPlayerSkillSlot SkillSlot)
 		return;
 	}
 	
-	FVector MouseworldLocation;
+	FVector MouseWorldLocation;
 	
-	if (!GetMouseWorldLocation(MouseworldLocation))
+	if (!GetMouseWorldLocation(MouseWorldLocation))
 	{
 		return;
 	}
 	
 	StopMovement();
 	
-	PlayerCharacter->UseSkill(SkillSlot, MouseworldLocation);
+	PlayerCharacter->UseSkill(SkillSlot, MouseWorldLocation);
 }
 
 

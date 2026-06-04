@@ -524,7 +524,19 @@ protected:
 	ELPlayerSkillID RSlotSkill = ELPlayerSkillID::Wind;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Skill|Equip")
-	ELPlayerSkillID VSlotSkill = ELPlayerSkillID::MeteorRain;
+	ELPlayerSkillID VSlotSkill = ELPlayerSkillID::None;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Skill|Equip")
+	ELPlayerSkillID ASlotSkill = ELPlayerSkillID::None;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Skill|Equip")
+	ELPlayerSkillID SSlotSkill = ELPlayerSkillID::None;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Skill|Equip")
+	ELPlayerSkillID DSlotSkill = ELPlayerSkillID::None;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Skill|Equip")
+	ELPlayerSkillID FSlotSkill = ELPlayerSkillID::None;
 	
 private:
 	FTimerHandle BasicAttackTimerHandle;
