@@ -2,7 +2,7 @@
 
 
 #include "LPlayerController.h"
-
+#include "ProjectLAR/Interaction/Public/LInteractableActor.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "LPlayerUIWidget.h"
@@ -207,6 +207,15 @@ void ALPlayerController::SetupInputComponent()
 				ETriggerEvent::Started,
 				this,
 				&ALPlayerController::ToggleSkillWindowInput
+			);
+		}
+		if (InteractAction)
+		{
+			EnhancedInput->BindAction(
+				InteractAction,
+				ETriggerEvent::Started,
+				this,
+				&ALPlayerController::InteractInput
 			);
 		}
 	}
@@ -584,3 +593,41 @@ void ALPlayerController::ToggleSkillWindowInput()
 	}
 }*/
 
+void ALPlayerController::SetCurrentInteractable(
+	ALInteractableActor* InInteractable
+)
+{
+	CurrentInteractable = InInteractable;
+
+	UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("SetCurrentInteractable: %s"),
+		CurrentInteractable ? *CurrentInteractable->GetName() : TEXT("None")
+	);
+}
+
+void ALPlayerController::ClearCurrentInteractable(
+	ALInteractableActor* InInteractable
+)
+{
+	if (CurrentInteractable != InInteractable)
+	{
+		return;
+	}
+
+	CurrentInteractable = nullptr;
+
+	UE_LOG(LogTemp, Warning, TEXT("ClearCurrentInteractable"));
+}
+
+void ALPlayerController::InteractInput()
+{
+	if (!CurrentInteractable)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Interact Failed: No CurrentInteractable"));
+		return;
+	}
+
+	CurrentInteractable->Interact(this);
+}

@@ -6,6 +6,7 @@
 UENUM(BlueprintType)
 enum class ELPlayerSkillSlot : uint8
 {
+	None UMETA(DisplayName = "None"),
 	Q	UMETA(DisplayName = "Q"),
 	W	UMETA(DisplayName = "W"),
 	E	UMETA(DisplayName = "E"),

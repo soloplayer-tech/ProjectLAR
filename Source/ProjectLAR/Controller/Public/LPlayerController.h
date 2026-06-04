@@ -12,6 +12,7 @@ class UInputMappingContext;
 class UInputAction;
 class ULPlayerUIWidget;
 class ULSkillWindowWidget;
+class ALInteractableActor;
 
 UCLASS()
 class PROJECTLAR_API ALPlayerController : public APlayerController
@@ -56,6 +57,15 @@ protected:
 	void ToggleSkillWindowInput();
 	void CreateSkillWindowWidget();
 	void BindSkillWindowToPawn(APawn* InPawn);
+	
+	// 인터렉트 actor
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> InteractAction;
+
+	UPROPERTY()
+	TObjectPtr<ALInteractableActor> CurrentInteractable;
+
+	void InteractInput();
 	
 private:
 	UPROPERTY(EditAnywhere, Category = "Input")
@@ -127,4 +137,8 @@ private:
 	void HandleSkillInput(ELPlayerSkillSlot SkillSlot);
 	
 	void BindPlayerUIToPawn(APawn* InPawn);
+
+public:
+	void SetCurrentInteractable(ALInteractableActor* InInteractable);
+	void ClearCurrentInteractable(ALInteractableActor* InInteractable);
 };

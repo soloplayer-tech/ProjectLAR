@@ -13,6 +13,8 @@
 #include "Engine/EngineTypes.h"
 #include "Engine/OverlapResult.h"
 #include "ProjectLAR/Combat/Public/LDamageable.h"
+#include "Kismet/GameplayStatics.h"
+#include "ProjectLAR/Save/Public/LPlayerSaveGames.h"
 #include "ProjectLAR/Skill/Public/LIceLanceActor.h"
 
 ALPlayerCharacter::ALPlayerCharacter()
@@ -27,6 +29,8 @@ void ALPlayerCharacter::BeginPlay()
 	CurrentHP = MaxHP;
 	CurrentMana = MaxMana;
 	CurrentIdentityGauge = 0.f;
+
+	LoadEquippedSkillSlots();
 }
 
 void ALPlayerCharacter::Tick(float DeltaSeconds)
@@ -886,6 +890,9 @@ void ALPlayerCharacter::EquipSkillToSlot(
 			*UEnum::GetValueAsString(SkillSlot)
 		);
 
+		
+		SaveEquippedSkillSlots();
+		
 		return;
 	}
 
@@ -924,6 +931,8 @@ void ALPlayerCharacter::EquipSkillToSlot(
 		*UEnum::GetValueAsString(SkillSlot),
 		*UEnum::GetValueAsString(SkillID)
 	);
+	
+	SaveEquippedSkillSlots();
 }
 
 bool ALPlayerCharacter::ExecuteSkillByID(
@@ -1531,6 +1540,7 @@ void ALPlayerCharacter::UseSkill(
 	}
 }
 
+
 bool ALPlayerCharacter::UseQSkill(const FVector& TargetLocation)
 {
 	if (!MeteorActorClass)
@@ -1857,4 +1867,123 @@ void ALPlayerCharacter::CancelCurrentAction()
 	GetWorldTimerManager().ClearTimer(SkillTimerHandle);
 	
 	Super::CancelCurrentAction();
+}
+
+void ALPlayerCharacter::SaveEquippedSkillSlots()
+{
+	ULPlayerSaveGame* SaveGameInstance = nullptr;
+
+	if (UGameplayStatics::DoesSaveGameExist(
+		PlayerSaveSlotName,
+		PlayerSaveUserIndex
+	))
+	{
+		SaveGameInstance = Cast<ULPlayerSaveGame>(
+			UGameplayStatics::LoadGameFromSlot(
+				PlayerSaveSlotName,
+				PlayerSaveUserIndex
+			)
+		);
+	}
+
+	if (!SaveGameInstance)
+	{
+		SaveGameInstance = Cast<ULPlayerSaveGame>(
+			UGameplayStatics::CreateSaveGameObject(
+				ULPlayerSaveGame::StaticClass()
+			)
+		);
+	}
+
+	if (!SaveGameInstance)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SaveEquippedSkillSlots Failed: SaveGameInstance is null"));
+		return;
+	}
+
+	SaveGameInstance->SavedSkillSlots.Empty();
+
+	const TArray<ELPlayerSkillSlot> SkillSlots =
+	{
+		ELPlayerSkillSlot::Q,
+		ELPlayerSkillSlot::W,
+		ELPlayerSkillSlot::E,
+		ELPlayerSkillSlot::R,
+		ELPlayerSkillSlot::A,
+		ELPlayerSkillSlot::S,
+		ELPlayerSkillSlot::D,
+		ELPlayerSkillSlot::F,
+		ELPlayerSkillSlot::V
+	};
+
+	for (const ELPlayerSkillSlot SkillSlot : SkillSlots)
+	{
+		FLPlayerSkillSlotSaveData SaveData;
+		SaveData.SkillSlot = SkillSlot;
+		SaveData.SkillID = GetEquippedSkillID(SkillSlot);
+
+		SaveGameInstance->SavedSkillSlots.Add(SaveData);
+	}
+
+	const bool bSaved = UGameplayStatics::SaveGameToSlot(
+		SaveGameInstance,
+		PlayerSaveSlotName,
+		PlayerSaveUserIndex
+	);
+
+	UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("SaveEquippedSkillSlots / Success=%d / Count=%d"),
+		bSaved,
+		SaveGameInstance->SavedSkillSlots.Num()
+	);
+}
+
+void ALPlayerCharacter::LoadEquippedSkillSlots()
+{
+	if (!UGameplayStatics::DoesSaveGameExist(
+		PlayerSaveSlotName,
+		PlayerSaveUserIndex
+	))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LoadEquippedSkillSlots: Save file does not exist. Use default slots."));
+		return;
+	}
+
+	ULPlayerSaveGame* SaveGameInstance = Cast<ULPlayerSaveGame>(
+		UGameplayStatics::LoadGameFromSlot(
+			PlayerSaveSlotName,
+			PlayerSaveUserIndex
+		)
+	);
+
+	if (!SaveGameInstance)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LoadEquippedSkillSlots Failed: SaveGameInstance is null"));
+		return;
+	}
+
+	for (const FLPlayerSkillSlotSaveData& SaveData : SaveGameInstance->SavedSkillSlots)
+	{
+		SetEquippedSkillID(
+			SaveData.SkillSlot,
+			SaveData.SkillID
+		);
+
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("Load Skill Slot / Slot=%s / Skill=%s"),
+			*UEnum::GetValueAsString(SaveData.SkillSlot),
+			*UEnum::GetValueAsString(SaveData.SkillID)
+		);
+	}
+
+	UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("LoadEquippedSkillSlots Complete / Count=%d"),
+		SaveGameInstance->SavedSkillSlots.Num()
+	);
 }

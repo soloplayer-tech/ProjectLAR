@@ -34,10 +34,21 @@ public:
 	// 입력 슬롯 기준 스킬 사용
 	void UseSkill(ELPlayerSkillSlot SkillSlot, const FVector& TargetLocation);
 
+	// 세이브 관련
+	void SaveEquippedSkillSlots();
+	void LoadEquippedSkillSlots();
+	
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Save")
+	FString PlayerSaveSlotName = TEXT("PlayerSaveSlot");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Save")
+	int32 PlayerSaveUserIndex = 0;
+	
 	// =======================================================================================
 	// Skill Equip
 	// Q/W/E/R 같은 슬롯에 어떤 실제 스킬이 들어있는지 관리한다.
-
+public:
 	UFUNCTION(BlueprintPure, Category = "Skill|Equip")
 	ELPlayerSkillID GetEquippedSkillID(ELPlayerSkillSlot SkillSlot) const;
 	
