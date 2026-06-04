@@ -5,6 +5,7 @@
 #include "TimerManager.h"
 #include "DrawDebugHelpers.h"
 #include "CollisionQueryParams.h"
+#include "LPlayerCharacter.h"
 #include "OB_LogManager.h"
 #include "WorldCollision.h"
 #include "Engine/OverlapResult.h" 
@@ -40,14 +41,16 @@ public:
         const FVector& Size, // 원형은 Size.X(반지름) 사용, 박스는 Size(Extent) 통째로 사용
         const FRotator& Rotation,
         float Duration, 
-        FOnAttackComplete OnComplete = FOnAttackComplete()
+        FOnAttackComplete OnComplete = FOnAttackComplete(),
+        AActor& BossCharacter,
+        EAttackPattern SkillID
     )
     {
         if (!World) { LOG_TRACE_WARN("World is nullptr!!!"); return; }
 
         // 타입에 맞춰 빨간색 장판 그리기
         switch (Type)
-        {
+        { 
             case ETelegraphType::Circle:
                 LOG_TRACE_INFO(TEXT("Type : Circle, Location : %s, Size : %s, Duration : %f"), *Center.ToString(), *Size.ToString(), Duration);
                 DrawDebugCircle(World, Center, Size.X, 32, FColor::Red, false, Duration, 0, 4.f, FVector(0, 1, 0), FVector(1, 0, 0), false);
@@ -68,7 +71,7 @@ public:
 
         // 타이머 설정
         FTimerHandle TelegraphTimer;
-        World->GetTimerManager().SetTimer(TelegraphTimer, [World, Type, Center, Size, Rotation, OnComplete]()
+        World->GetTimerManager().SetTimer(TelegraphTimer, [World, Type, Center, Size, Rotation, OnComplete, BossCharacter, SkillID]()
         {
             FCollisionShape CollisionShape;
 
@@ -106,14 +109,14 @@ public:
                 for (const FOverlapResult& Result : OverlapResults)
                 {
                     AActor* HitActor = Result.GetActor();
-                    if (HitActor && HitActor->ActorHasTag(FName("Player")))
+                    if (Cast<ALPlayerCharacter>(HitActor))
                     {
                         if (Type == ETelegraphType::Cone)
                         {
                             FVector ForwardVector = Rotation.Vector().GetSafeNormal2D(); // 보스의 정면 방향
                             FVector TargetVector = (HitActor->GetActorLocation() - Center).GetSafeNormal2D(); // 보스 -> 플레이어 방향
 
-                            // 두 벡터의 내적(Dot Product)을 통해 사이각을 구합니다.
+                            // 두 벡터의 내적을 통해 사이각을 구합니다.
                             float DotProduct = FVector::DotProduct(ForwardVector, TargetVector);
                             float AngleToTarget = FMath::RadiansToDegrees(FMath::Acos(DotProduct));
 
@@ -123,6 +126,16 @@ public:
                             {
                                 continue; 
                             }
+                        }
+                        
+                        if (HitActor->Implements<ILDamageable>())
+                        {
+                            ILDamageable::Execute_ReceiveSkillDamage(
+                                HitActor, 
+                                50.f, 
+                                BossCharacter, // 보스 자신
+                                SkillID
+                            );
                         }
                         
                         LOG_TRACE_INFO(TEXT("[Integrated Telegraph] Player Hit Success!"));

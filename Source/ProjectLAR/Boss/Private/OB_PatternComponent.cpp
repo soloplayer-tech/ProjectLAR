@@ -100,7 +100,6 @@ void UOB_PatternComponent::ExecuteHammer()
 	FVector TargetLocation = OwnerCharacter -> GetFSMComponent() ->GetTargetActor() ->GetActorLocation();
 	
 	FVector LookDirection = TargetLocation - BossLocation;
-	
 	FVector CorrectForward = LookDirection.GetSafeNormal2D();
 	
 	FRotator NewRotation = CorrectForward.Rotation();
@@ -123,8 +122,10 @@ void UOB_PatternComponent::ExecuteHammer()
 		1.0f,
 		FBossTelegraphModule::FOnAttackComplete::CreateLambda([this]()
 		{
-			if (OwnerCharacter -> GetFSMComponent()) OwnerCharacter -> GetFSMComponent() -> SetState(EBossBattleState::MOVE);
-		})
+			if (OwnerCharacter -> GetFSMComponent()) OwnerCharacter -> GetFSMComponent() -> SetState(EBossBattleState::IDLE);
+		}),
+		*OwnerCharacter,
+		EAttackPattern::HAMMER
 	);
 	
 }
@@ -137,7 +138,6 @@ void UOB_PatternComponent::ExecuteRush()
 	FVector TargetLocation = OwnerCharacter -> GetFSMComponent() ->GetTargetActor() ->GetActorLocation();
 	
 	FVector LookDirection = TargetLocation - BossLocation;
-	
 	FVector CorrectForward = LookDirection.GetSafeNormal2D();
 	
 	FRotator NewRotation = CorrectForward.Rotation();
@@ -149,6 +149,8 @@ void UOB_PatternComponent::ExecuteRush()
 	FVector BoxExtent = FVector(300.f, 100.f, 10.f);
 	FVector AdjustedCenter = BossLocation + (CorrectForward * BoxExtent.X);
 	
+	
+	
 	FBossTelegraphModule::SpawnTelegraph(
 		GetWorld(),
 		ETelegraphType::Box,
@@ -158,8 +160,10 @@ void UOB_PatternComponent::ExecuteRush()
 		1.0f,
 		FBossTelegraphModule::FOnAttackComplete::CreateLambda([this]()
 		{
-			if (OwnerCharacter -> GetFSMComponent()) OwnerCharacter -> GetFSMComponent() -> SetState(EBossBattleState::MOVE);
-		})
+			if (OwnerCharacter -> GetFSMComponent()) OwnerCharacter -> GetFSMComponent() -> SetState(EBossBattleState::IDLE);
+		}),
+		*OwnerCharacter,
+		EAttackPattern::RUSH
 	);
 }
 
@@ -171,7 +175,6 @@ void UOB_PatternComponent::ExecuteSlam()
 	FVector TargetLocation = OwnerCharacter -> GetFSMComponent() ->GetTargetActor() ->GetActorLocation();
 	
 	FVector LookDirection = TargetLocation - BossLocation;
-	
 	FVector CorrectForward = LookDirection.GetSafeNormal2D();
 	
 	FRotator NewRotation = CorrectForward.Rotation();
@@ -192,8 +195,10 @@ void UOB_PatternComponent::ExecuteSlam()
 		1.0f,
 		FBossTelegraphModule::FOnAttackComplete::CreateLambda([this]()
 		{
-			if (OwnerCharacter -> GetFSMComponent()) OwnerCharacter -> GetFSMComponent() -> SetState(EBossBattleState::MOVE);
-		})
+			if (OwnerCharacter -> GetFSMComponent()) OwnerCharacter -> GetFSMComponent() -> SetState(EBossBattleState::IDLE);
+		}),
+		*OwnerCharacter,
+		EAttackPattern::SLAM
 	);
 }
 
@@ -226,8 +231,10 @@ void UOB_PatternComponent::ExecuteCard()
 		1.0f,
 		FBossTelegraphModule::FOnAttackComplete::CreateLambda([this]()
 		{
-			if (OwnerCharacter -> GetFSMComponent()) OwnerCharacter -> GetFSMComponent() -> SetState(EBossBattleState::MOVE);
-		})
+			if (OwnerCharacter -> GetFSMComponent()) OwnerCharacter -> GetFSMComponent() -> SetState(EBossBattleState::IDLE);
+		}),
+		*OwnerCharacter,
+		EAttackPattern::CARD
 	);
 }
 

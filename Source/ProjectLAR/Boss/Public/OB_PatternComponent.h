@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "ProjectLAR/Combat/Public/LDamageable.h"
 #include "States/OB_EAttackPattern.h"
 #include "OB_PatternComponent.generated.h"
 
