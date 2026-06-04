@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "ProjectLAR/Combat/Public/LDamageable.h"
 #include "States/OB_EBossBattleState.h"
 #include "OB_BossFSMComponent.generated.h"
 
@@ -11,6 +12,8 @@
  * @brief '상태를 누가 관리하지?' → FSM 컴포넌트.
  */
 
+class UOB_CombatComponent;
+enum class ELPlayerSkillID : uint8;
 enum class EAttackPattern : uint8;
 class AOB_BossCharacter;
 class AOB_BossAIController;
@@ -19,21 +22,6 @@ UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class PROJECTLAR_API UOB_BossFSMComponent : public UActorComponent
 {
 	GENERATED_BODY()
-	
-	// 보스 열겨형 호출
-	UPROPERTY()
-	EBossBattleState CurAIState = EBossBattleState::IDLE;			// 현재 상태 저장 변수
-	
-	// UAIFSMComponent.h
-	UPROPERTY()
-	TObjectPtr<AOB_BossAIController> OwnerController;
-	
-	UPROPERTY()
-	TObjectPtr<AOB_BossCharacter> Boss;
-	
-	UPROPERTY()
-	TObjectPtr<AActor> Target;
-
 
 public:
 	// Sets default values for this component's properties
@@ -47,6 +35,24 @@ public:
 	
 	TObjectPtr<AActor> GetTargetActor() const { return Target; }
 	EBossBattleState GetCurState() const { return CurAIState; }
+	
+private: 
+	// 보스 열겨형 호출
+	UPROPERTY()
+	EBossBattleState CurAIState = EBossBattleState::IDLE;			// 현재 상태 저장 변수
+	
+	// UAIFSMComponent.h
+	UPROPERTY()
+	TObjectPtr<AOB_BossAIController> OwnerController;
+	
+	UPROPERTY()
+	TObjectPtr<AOB_BossCharacter> Boss;
+	
+	UPROPERTY()
+	TObjectPtr<AActor> Target;
+	
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UOB_CombatComponent> CombatComp;
 
 protected:
 	// Called when the game starts
@@ -56,4 +62,6 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
 	                           FActorComponentTickFunction* ThisTickFunction) override;
+	
+
 };

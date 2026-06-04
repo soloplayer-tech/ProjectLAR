@@ -4,6 +4,7 @@
 #include "OB_BossFSMComponent.h"
 #include "OB_BossAIController.h"
 #include "OB_BossCharacter.h"
+#include "OB_CombatComponent.h"
 #include "OB_LogManager.h"
 
 // Sets default values for this component's properties
@@ -13,9 +14,6 @@ UOB_BossFSMComponent::UOB_BossFSMComponent()
 	// off to improve performance if you don't need them.
 	
 	PrimaryComponentTick.bCanEverTick = false; // 틱 계산 X, 이벤트 단위로 계산 진행
-	LOG_TRACE_INFO();
-	
-
 
 	// ...
 }
@@ -23,6 +21,17 @@ UOB_BossFSMComponent::UOB_BossFSMComponent()
 void UOB_BossFSMComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	LOG_TRACE_INFO();
+	
+	Boss = Cast<AOB_BossCharacter>(GetOwner());
+	
+	if (Boss)
+	{
+		OwnerController = Cast<AOB_BossAIController>(Boss->GetController());
+		CombatComp = Boss -> GetCombatComponent();
+	}
+	
 }
 
 // Called every frame
@@ -30,15 +39,9 @@ void UOB_BossFSMComponent::TickComponent(float DeltaTime, ELevelTick TickType,
                                          FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	Boss = Cast<AOB_BossCharacter>(GetOwner());
-	
-	if (Boss)
-	{
-		OwnerController = Cast<AOB_BossAIController>(Boss->GetController());
-	}
 	// ...
 }
+
 
 // 상태 진입 시 행동 정의 
 void UOB_BossFSMComponent::OnEnterState(EBossBattleState BossState)
@@ -50,7 +53,8 @@ void UOB_BossFSMComponent::OnEnterState(EBossBattleState BossState)
 	{
 		case EBossBattleState::	IDLE:		if (OwnerController) { OwnerController -> StopMovement(); }		 break;
 		case EBossBattleState::	MOVE:		if (OwnerController) { OwnerController -> StartMove(); }		 break;
-		case EBossBattleState::	ATTACK:		if (OwnerController) {  }					 break;
+		case EBossBattleState::	ATTACK:		if (OwnerController) { CombatComp	   -> StartAttack(); }		 break;
+		case EBossBattleState:: DEAD:		if (OwnerController) { OwnerController -> StopMovement(); }		 break;
 		case EBossBattleState::	STUNNED:	break;	
 	}
 }

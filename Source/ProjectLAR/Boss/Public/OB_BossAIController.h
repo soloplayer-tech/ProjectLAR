@@ -7,6 +7,7 @@
 #include "Perception/AIPerceptionTypes.h"
 #include "OB_BossAIController.generated.h"
 
+class UNavigationSystemV1;
 class UOB_BossFSMComponent;
 class AOB_BossCharacter;
 
@@ -18,33 +19,50 @@ class PROJECTLAR_API AOB_BossAIController : public AAIController
 public:
 	// Sets default values for this actor's properties
 	AOB_BossAIController();
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Boss|Sight")
+	float Sight_Radius = 3000.f;
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Boss|Sight")
+	float LoseSightRadius = 1000.f;
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Boss|Sight")
+	float MinRadius = 300.f;  
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Boss|Sight")
+	float MaxRadius = 1000.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BossControl")
+	float AcceptanceRadius = 200.f;
+	
+	UFUNCTION()
+	void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
+	
+	void StartMove();
+	void OnFindTarget(AActor* TargetActor);
+	void TeleportRandomlyAroundTarget(const FVector& TargetLocation);
+	void SetBossLocation(const FVector& TargetLocation, const FNavLocation& RandomNavLocation);
+	bool FindSafetyLocation(const FVector& TargetLocation, FNavLocation& SafetyLocation);
 
 	/** MoveToActor 변수 설명 인용 
 	 *  @brief Makes AI go toward specified Dest location, aborts any active path following
 	 *  @param AcceptanceRadius - finish move if pawn gets close enough
 	 *  @note AcceptanceRadius has default value or -1 due to Header Parser not being able to recognize UPathFollowingComponent::DefaultAcceptanceRadius
 	 */
+
+private:
 	
-	UPROPERTY(EditAnywhere,BlueprintReadOnly, Category="BossControl")
+	UPROPERTY()
 	TObjectPtr<AOB_BossCharacter> BossCharacter;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BossControl")
-UOB_BossFSMComponent* FSMComp;
+	UPROPERTY()
+	TObjectPtr<UOB_BossFSMComponent> FSMComp;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BossControl")
-	float AcceptanceRadius = 200.f;
+	UPROPERTY()
+	TObjectPtr<UAIPerceptionComponent> PerceptionComp;
 	
-	UPROPERTY(VisibleAnywhere)
-	UAIPerceptionComponent* PerceptionComp;
-	
-	FTimerHandle LoseSightTimer;
-	FTimerHandle ChaseTimer;
-
-	UFUNCTION()
-	void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
-	
-	UFUNCTION()
-	void StartMove();
+	UPROPERTY()
+	TObjectPtr<UNavigationSystemV1> NavSystem;
 	
 	// void OnMoveCompleted(FAIRequestID RequestID,  EPathFollowingResult::Type Result) override;
 	

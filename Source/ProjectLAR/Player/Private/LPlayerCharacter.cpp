@@ -5,6 +5,8 @@
 #include "NiagaraFunctionLibrary.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "DrawDebugHelpers.h"
+#include "OB_BossCharacter.h"
+#include "OB_BossFSMComponent.h"
 #include "Engine/World.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/OverlapResult.h"

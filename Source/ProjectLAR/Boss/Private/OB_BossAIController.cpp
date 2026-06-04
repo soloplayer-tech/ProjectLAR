@@ -2,10 +2,12 @@
 
 
 #include "OB_BossAIController.h"
+
 #include "OB_BossCharacter.h"
 #include "OB_BossFSMComponent.h"
 #include "OB_LogManager.h"
 
+#include "NavigationSystem.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -33,13 +35,16 @@ AOB_BossAIController::AOB_BossAIController()
 	
 	SetPerceptionComponent(*PerceptionComp);
 	
-	SightConfig->SightRadius            = 1000.f;
-	SightConfig->LoseSightRadius        = 1200.f;
+	SightConfig->SightRadius            = Sight_Radius;
+	SightConfig->LoseSightRadius        = LoseSightRadius;
 	SightConfig->PeripheralVisionAngleDegrees = 180.f;
 	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
 	
 	PerceptionComp -> ConfigureSense(*SightConfig);
 	PerceptionComp -> SetDominantSense(SightConfig -> GetSenseImplementation());
+	
+	// 월드와 네비게이션 시스템 가져오기
+	NavSystem = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
 	
 }
 
@@ -80,7 +85,7 @@ void AOB_BossAIController::OnPossess(APawn* InPawn)
 
 void AOB_BossAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
-	LOG_TRACE_INFO(TEXT("Call OnPerceptionUpdated"));
+	LOG_TRACE_INFO();
 
 	if (Actor == nullptr)
 	{
@@ -88,8 +93,7 @@ void AOB_BossAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimul
 		return;
 	}
 	
-	
-	// Simulus 감각 제대로 들어갔는지 검증
+	// Stimulus 감각 제대로 들어갔는지 검증
 	if (Stimulus.WasSuccessfullySensed())	
 	{
 		ACharacter* PlayerCharacter = UGameplayStatics::GetPlayerCharacter(this, 0);
@@ -102,13 +106,22 @@ void AOB_BossAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimul
 			if (FSMComp)
 			{
 				LOG_TRACE_INFO("FSMComp -> SetTargetActor(Actor);");
+				
 				FSMComp -> SetTargetActor(Actor);
-				FSMComp -> SetState(EBossBattleState::MOVE);
+				
+				if (FSMComp->GetCurState() == EBossBattleState::IDLE && BossCharacter)
+				{
+					OnFindTarget(Actor);	
+				} else
+				{	LOG_TRACE_WARN();
+					FSMComp -> SetState(EBossBattleState::ATTACK);
+				}
 			}
 		}
 	}
 	else
 	{
+		LOG_TRACE_WARN();
 		if (FSMComp && Actor == FSMComp -> GetTargetActor()) 
 		{
 			FSMComp -> SetState(EBossBattleState::IDLE);
@@ -120,7 +133,7 @@ void AOB_BossAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimul
 // FSM이 MOVE State 진입 시 호출
 void AOB_BossAIController::StartMove()
 {
-	LOG_TRACE_INFO(TEXT("Call StartMove"));
+	LOG_TRACE_INFO();
 	
 	FAIMoveRequest MoveRequest;
 	MoveRequest.SetGoalActor(FSMComp->GetTargetActor());
@@ -132,6 +145,7 @@ void AOB_BossAIController::StartMove()
 	switch (MoveResult.Code.GetValue())
 	{
 	case EPathFollowingRequestResult::AlreadyAtGoal:
+		LOG_TRACE_WARN("SetAttack");
 		FSMComp -> SetState(EBossBattleState::ATTACK);
 		break;
 		
@@ -143,4 +157,71 @@ void AOB_BossAIController::StartMove()
 		FSMComp->SetState(EBossBattleState::MOVE);
 		break;
 	}
+}
+
+void AOB_BossAIController::OnFindTarget(AActor* TargetActor)
+{
+	LOG_TRACE_INFO(TEXT("[Call OnFindTarget Target : %s]"), *TargetActor -> GetName());
+	
+	if (!BossCharacter) { LOG_TRACE_WARN("BossCharacter is Null !!"); return; }
+	
+	FVector TargetLocation = TargetActor -> GetActorLocation();
+	FVector BossLocation = BossCharacter -> GetActorLocation();
+	
+	if ( FVector::Dist(TargetLocation,BossLocation) > LoseSightRadius )
+	{
+		TeleportRandomlyAroundTarget(TargetLocation);
+		FSMComp -> SetState(EBossBattleState::MOVE);
+	}
+}
+
+
+void AOB_BossAIController::TeleportRandomlyAroundTarget(const FVector& TargetLocation)
+{
+	LOG_TRACE_INFO();
+	
+	if (TargetLocation.IsZero()) { LOG_TRACE_WARN("TargetLocation is (0, 0, 0)"); return; }
+	if (!NavSystem) { LOG_TRACE_WARN("NavSystem is nullptr"); return; }
+
+	FNavLocation RandomNavLocation;
+	
+	if (FindSafetyLocation(TargetLocation,RandomNavLocation))
+	{
+		SetBossLocation(TargetLocation,RandomNavLocation);
+	} // 괜찮은 장소가 있다면 그곳으로 이동. 
+	
+}
+
+bool AOB_BossAIController::FindSafetyLocation(const FVector& TargetLocation, FNavLocation& SafetyLocation)
+{
+	LOG_TRACE_INFO();
+	// 안전한 무작위 위치를 찾을 때까지 반복 (10번 정도);
+	for (int32 i = 0; i < 10; ++i)
+	{
+		if (NavSystem->GetRandomReachablePointInRadius(TargetLocation, MaxRadius, SafetyLocation))
+		{
+			float Distance = FVector::Dist(TargetLocation, SafetyLocation.Location);
+			if (Distance >= MinRadius) // 플레이어랑 너무 가깝지 않게 조정 (MinRadius)
+			{
+				return true;
+			}
+		}
+	}
+	
+	return false;
+}
+
+void AOB_BossAIController::SetBossLocation(const FVector& TargetLocation, const FNavLocation& RandomNavLocation)
+{
+	LOG_TRACE_INFO();
+	
+	if (!BossCharacter) { LOG_TRACE_WARN("BossCharacter is Null !!"); return; }
+	
+	BossCharacter -> SetActorLocation(RandomNavLocation.Location, false, nullptr, ETeleportType::TeleportPhysics);
+        
+	FVector LookDirection = TargetLocation - RandomNavLocation.Location;
+	FRotator NewRotation = LookDirection.Rotation();
+	NewRotation.Pitch = 0.f; 
+	NewRotation.Roll = 0.f;
+	BossCharacter -> SetActorRotation(NewRotation);
 }

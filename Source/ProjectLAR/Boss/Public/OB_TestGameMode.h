@@ -20,7 +20,4 @@ class PROJECTLAR_API AOB_TestGameMode : public AGameModeBase
 	
 	UPROPERTY(EditAnywhere, Category="Level Boss");
 	TSubclassOf<ACharacter> BossClass;;
-
-	void SpawnBoss();
-	void SpawnBossAtRandLocation(FVector, float);
 };

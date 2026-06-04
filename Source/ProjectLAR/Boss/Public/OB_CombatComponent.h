@@ -4,7 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "ProjectLAR/Combat/Public/LDamageable.h"
 #include "OB_CombatComponent.generated.h"
+
 
 /**
  * TODO : 
@@ -15,8 +17,11 @@
  * - [ ] : Card 기능 구현
  * - [ ] : CharacterHP 받아서 State 분기 처리 -- 현재는 일단 랜덤 값으로 계산
  */
+
+class ALFloatingDamageActor;
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
-class PROJECTLAR_API UOB_CombatComponent : public UActorComponent
+class PROJECTLAR_API UOB_CombatComponent : public UActorComponent, public ILDamageable
 {
 	GENERATED_BODY()
 
@@ -27,12 +32,20 @@ public:
 	void StartAttack();
 	void StopAttack();
 	
+	bool bDestroyOnDeath = true;
+	
 	void TakeDamage(float DamageAmount);
+	
 	bool IsDead() const { return CurHP <= 0.f; }
 	
 	float GetCurHP() const { return CurHP; }
 	float GetHPRatio() const { return CurHP / MaxHP; }
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+	TSubclassOf<ALFloatingDamageActor> FloatingDamageActorClass;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+	float FloatingDamageHeightOffset = 140.0f;
 	
 private:     
 	
@@ -45,7 +58,7 @@ private:
 
 	 // HP
     UPROPERTY(EditDefaultsOnly, Category="Combat|HP")
-    float MaxHP = 1000.f;
+    float MaxHP = 100.f; // TODO: Debugging 편의성을 위해서 수치를 낮춰둠 이후 다시 변경 (1000.f)
 
     UPROPERTY(VisibleAnywhere, Category="Combat|HP")
     float CurHP;
@@ -55,11 +68,12 @@ private:
     float AttackCooldown = 2.0f;
 
     FTimerHandle CooldownTimer;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Combat|Attack")
     bool bCanAttack = true;
 
     void OnCooldownFinished();
     void OnDead();
-	
 
 protected:
 	// Called when the game starts

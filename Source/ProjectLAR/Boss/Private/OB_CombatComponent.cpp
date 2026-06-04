@@ -4,6 +4,7 @@
 #include "OB_CombatComponent.h"
 #include "OB_BossCharacter.h"
 #include "OB_BossFSMComponent.h"
+#include "OB_PatternComponent.h"
 
 
 // Sets default values for this component's properties
@@ -16,6 +17,15 @@ UOB_CombatComponent::UOB_CombatComponent()
 	// ...
 	CurHP = MaxHP;
 	
+}
+
+
+// Called when the game starts
+void UOB_CombatComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// ...
 	OwnerCharacter = Cast<AOB_BossCharacter>(GetOwner());
 	if (OwnerCharacter != nullptr)
 	{
@@ -23,21 +33,23 @@ UOB_CombatComponent::UOB_CombatComponent()
 	}
 }
 
+
+// Called every frame
+void UOB_CombatComponent::TickComponent(float DeltaTime, ELevelTick TickType,
+                                        FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	// ...
+}
+
+
 void UOB_CombatComponent::StartAttack()
 {
-	LOG_TRACE_INFO("Call StartAttack")
+	LOG_TRACE_INFO()
 	
-	if (!bCanAttack)
-	{
-		LOG_TRACE_INFO("Is CoolTime");
-		return;
-	}
-	
-	if (!PatternComp)
-	{
-		LOG_TRACE_WARN("PatternComp is null!!");
-		return;
-	}
+	if (!bCanAttack) { LOG_TRACE_INFO("Is CoolTime"); return; }
+	if (!PatternComp) { LOG_TRACE_WARN("PatternComp is null!!"); return; }
 	
 	PatternComp -> SelectAndExecute();
 	
@@ -98,27 +110,11 @@ void UOB_CombatComponent::OnDead()
 		auto* FSMComp = OwnerCharacter->GetFSMComponent();
 		
 		if (FSMComp)
+		{
 			FSMComp->SetState(EBossBattleState::DEAD);
+			OwnerCharacter -> Destroy();
+		}
 	}
-	
 }
 
-// Called when the game starts
-void UOB_CombatComponent::BeginPlay()
-{
-	Super::BeginPlay();
-
-	// ...
-	
-}
-
-
-// Called every frame
-void UOB_CombatComponent::TickComponent(float DeltaTime, ELevelTick TickType,
-                                        FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// ...
-}
 
