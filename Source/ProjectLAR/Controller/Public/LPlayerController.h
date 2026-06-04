@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "InputActionValue.h"
 #include "LPlayerSkillSlot.h"
 #include "GameFramework/PlayerController.h"
 #include "LPlayerController.generated.h"
@@ -10,6 +11,7 @@
 class UInputMappingContext;
 class UInputAction;
 class ULPlayerUIWidget;
+class ULSkillWindowWidget;
 
 UCLASS()
 class PROJECTLAR_API ALPlayerController : public APlayerController
@@ -28,6 +30,32 @@ protected:
 	TObjectPtr<UInputAction> IdentityAction;
 
 	void IdentityInput();
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<class UInputAction> CameraZoomInAction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<class UInputAction> CameraZoomOutAction;
+	
+	void CameraZoomInInput();
+	void CameraZoomOutInput();
+	
+	// =========================
+	// Skill Window
+	// =========================
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> ToggleSkillWindowAction;
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<ULSkillWindowWidget> SkillWindowWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<ULSkillWindowWidget> SkillWindowWidget;
+
+	void ToggleSkillWindowInput();
+	void CreateSkillWindowWidget();
+	void BindSkillWindowToPawn(APawn* InPawn);
 	
 private:
 	UPROPERTY(EditAnywhere, Category = "Input")
@@ -52,7 +80,22 @@ private:
 	TObjectPtr<UInputAction> SkillEAction;
 	
 	UPROPERTY(EditAnywhere, Category = "Skill")
+	TObjectPtr<UInputAction> SkillAAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Skill")
+	TObjectPtr<UInputAction> SkillSAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Skill")
+	TObjectPtr<UInputAction> SkillDAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Skill")
+	TObjectPtr<UInputAction> SkillFAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Skill")
 	TObjectPtr<UInputAction> SkillRAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Skill")
+	TObjectPtr<UInputAction> SkillVAction;
 	
 	
 	UPROPERTY(EditAnywhere, Category = "UI")
@@ -74,6 +117,12 @@ private:
 	void SkillWInput();
 	void SkillEInput();
 	void SkillRInput();
+	void SkillAInput();
+	void SkillSInput();
+	void SkillDInput();
+	void SkillFInput();
+	void SkillVInput();
+	
 	
 	void HandleSkillInput(ELPlayerSkillSlot SkillSlot);
 	

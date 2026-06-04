@@ -7,6 +7,8 @@
 #include "DrawDebugHelpers.h"
 #include "OB_BossCharacter.h"
 #include "OB_BossFSMComponent.h"
+// #include "DrawDebugHelpers.h"
+// #include "Components/SlateWrapperTypes.h"
 #include "Engine/World.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/OverlapResult.h"
@@ -308,6 +310,8 @@ void ALPlayerCharacter::ActivateIdentity()
 	
 	BP_OnIdentityActivated();
 
+	
+	
 	GetWorldTimerManager().ClearTimer(IdentityTimerHandle);
 
 	GetWorldTimerManager().SetTimer(
@@ -323,6 +327,8 @@ void ALPlayerCharacter::EndIdentity()
 {
 	bIdentityActive = false;
 	StopIdentityBuffVFX();
+	
+	BP_OnIdentityEnded();
 	
 	GetWorldTimerManager().ClearTimer(IdentityTimerHandle);
 }
@@ -435,6 +441,7 @@ void ALPlayerCharacter::StartIdentityBuffVFX()
 			
 		);
 }
+
 
 void ALPlayerCharacter::StopIdentityBuffVFX()
 {
@@ -797,6 +804,18 @@ ELPlayerSkillID ALPlayerCharacter::GetEquippedSkillID(ELPlayerSkillSlot SkillSlo
 
 	case ELPlayerSkillSlot::V:
 		return VSlotSkill;
+		
+	case ELPlayerSkillSlot::A:
+		return ASlotSkill;
+		
+	case ELPlayerSkillSlot::S:
+		return SSlotSkill;
+		
+	case ELPlayerSkillSlot::D:
+		return DSlotSkill;
+		
+	case ELPlayerSkillSlot::F:
+		return FSlotSkill;
 
 	default:
 		return ELPlayerSkillID::None;
@@ -829,9 +848,82 @@ void ALPlayerCharacter::SetEquippedSkillID(
 		VSlotSkill = SkillID;
 		break;
 		
+	case ELPlayerSkillSlot::A:
+		ASlotSkill = SkillID;
+		break;
+		
+	case ELPlayerSkillSlot::S:
+		SSlotSkill = SkillID;
+		break;
+		
+	case ELPlayerSkillSlot::D:
+		DSlotSkill = SkillID;
+		break;
+		
+	case ELPlayerSkillSlot::F:
+		FSlotSkill = SkillID;
+		break;
+		
+		
 	default:
 		break;
 	}
+}
+
+void ALPlayerCharacter::EquipSkillToSlot(
+	ELPlayerSkillSlot SkillSlot,
+	ELPlayerSkillID SkillID
+)
+{
+	if (SkillID == ELPlayerSkillID::None)
+	{
+		SetEquippedSkillID(SkillSlot, ELPlayerSkillID::None);
+
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("EquipSkillToSlot Clear / Slot: %s"),
+			*UEnum::GetValueAsString(SkillSlot)
+		);
+
+		return;
+	}
+
+	const TArray<ELPlayerSkillSlot> SkillSlots =
+	{
+		ELPlayerSkillSlot::Q,
+		ELPlayerSkillSlot::W,
+		ELPlayerSkillSlot::E,
+		ELPlayerSkillSlot::R,
+		ELPlayerSkillSlot::A,
+		ELPlayerSkillSlot::S,
+		ELPlayerSkillSlot::D,
+		ELPlayerSkillSlot::F,
+		ELPlayerSkillSlot::V,
+	};
+
+	for (const ELPlayerSkillSlot ExistingSlot : SkillSlots)
+	{
+		if (ExistingSlot == SkillSlot)
+		{
+			continue;
+		}
+
+		if (GetEquippedSkillID(ExistingSlot) == SkillID)
+		{
+			SetEquippedSkillID(ExistingSlot, ELPlayerSkillID::None);
+		}
+	}
+
+	SetEquippedSkillID(SkillSlot, SkillID);
+
+	UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("EquipSkillToSlot Success / Slot: %s / Skill: %s"),
+		*UEnum::GetValueAsString(SkillSlot),
+		*UEnum::GetValueAsString(SkillID)
+	);
 }
 
 bool ALPlayerCharacter::ExecuteSkillByID(
@@ -1131,7 +1223,7 @@ void ALPlayerCharacter::ApplyBasicAttackDamage(const FVector& AttackDirection)
 
 	DamageCenter.Z += BasicAttackDamageHeightOffset;
 
-	if (bDrawBasicAttackDamageDebug)
+	/*if (bDrawBasicAttackDamageDebug)
 	{
 		DrawDebugBox(
 			World,
@@ -1142,7 +1234,7 @@ void ALPlayerCharacter::ApplyBasicAttackDamage(const FVector& AttackDirection)
 			false,
 			1.0f
 		);
-	}
+	}*/
 
 	TArray<FOverlapResult> OverlapResults;
 
@@ -1229,7 +1321,7 @@ void ALPlayerCharacter::ApplyWindDamage(const FVector& AttackDirection)
 
 	DamageCenter.Z += WindDamageHeightOffset;
 
-	if (bDrawWindDamageDebug)
+	/*if (bDrawWindDamageDebug)
 	{
 		DrawDebugBox(
 			World,
@@ -1240,7 +1332,7 @@ void ALPlayerCharacter::ApplyWindDamage(const FVector& AttackDirection)
 			false,
 			1.0f
 		);
-	}
+	}*/
 
 	TArray<FOverlapResult> OverlapResults;
 

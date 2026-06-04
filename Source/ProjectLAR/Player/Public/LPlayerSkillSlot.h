@@ -10,5 +10,9 @@ enum class ELPlayerSkillSlot : uint8
 	W	UMETA(DisplayName = "W"),
 	E	UMETA(DisplayName = "E"),
 	R 	UMETA(DisplayName = "R"),
+	A 	UMETA(DisplayName = "A"),
+	S 	UMETA(DisplayName = "S"),
+	D 	UMETA(DisplayName = "D"),
+	F 	UMETA(DisplayName = "F"),
 	V   UMETA(DisplayName = "V"),
 };

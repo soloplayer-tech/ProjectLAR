@@ -37,6 +37,11 @@ public:
 	/*UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float DashPower = 10000.f;*/
 
+public:
+	void CameraZoomIn();
+	void CameraZoomOut();
+
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Dash")
 	bool bBlink = false;
@@ -64,7 +69,27 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Movement|Dash")
 	bool bCanDash = true;
 	
+	// =========================
+	// Camera Zoom
+	// =========================
 
+	void UpdateCameraZoom(float DeltaTime);
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Zoom")
+	float MinCameraArmLength = 700.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Zoom")
+	float MaxCameraArmLength = 1800.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Zoom")
+	float CameraZoomStep = 150.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Zoom")
+	float CameraZoomInterpSpeed = 8.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera|Zoom")
+	float TargetCameraArmLength = 1500.0f;
+	
 private:
 	FVector DashStartLocation;
 	FVector DashTargetLocation;
