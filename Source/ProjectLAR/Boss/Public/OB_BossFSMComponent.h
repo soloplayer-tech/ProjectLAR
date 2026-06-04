@@ -12,6 +12,7 @@
  * @brief '상태를 누가 관리하지?' → FSM 컴포넌트.
  */
 
+class UOB_CombatComponent;
 enum class ELPlayerSkillID : uint8;
 enum class EAttackPattern : uint8;
 class AOB_BossCharacter;
@@ -49,6 +50,9 @@ private:
 	
 	UPROPERTY()
 	TObjectPtr<AActor> Target;
+	
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UOB_CombatComponent> CombatComp;
 
 protected:
 	// Called when the game starts

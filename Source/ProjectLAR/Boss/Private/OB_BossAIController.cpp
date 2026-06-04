@@ -44,8 +44,7 @@ AOB_BossAIController::AOB_BossAIController()
 	PerceptionComp -> SetDominantSense(SightConfig -> GetSenseImplementation());
 	
 	// 월드와 네비게이션 시스템 가져오기
-	World = GetWorld();
-	NavSystem = FNavigationSystem::GetCurrent<UNavigationSystemV1>(World);
+	NavSystem = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
 	
 }
 
@@ -114,14 +113,15 @@ void AOB_BossAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimul
 				{
 					OnFindTarget(Actor);	
 				} else
-				{
-					FSMComp -> SetState(EBossBattleState::MOVE);
+				{	LOG_TRACE_WARN();
+					FSMComp -> SetState(EBossBattleState::ATTACK);
 				}
 			}
 		}
 	}
 	else
 	{
+		LOG_TRACE_WARN();
 		if (FSMComp && Actor == FSMComp -> GetTargetActor()) 
 		{
 			FSMComp -> SetState(EBossBattleState::IDLE);
@@ -145,6 +145,7 @@ void AOB_BossAIController::StartMove()
 	switch (MoveResult.Code.GetValue())
 	{
 	case EPathFollowingRequestResult::AlreadyAtGoal:
+		LOG_TRACE_WARN("SetAttack");
 		FSMComp -> SetState(EBossBattleState::ATTACK);
 		break;
 		
@@ -180,7 +181,7 @@ void AOB_BossAIController::TeleportRandomlyAroundTarget(const FVector& TargetLoc
 	LOG_TRACE_INFO();
 	
 	if (TargetLocation.IsZero()) { LOG_TRACE_WARN("TargetLocation is (0, 0, 0)"); return; }
-	if (!World || !NavSystem) { LOG_TRACE_WARN("World || NavSystem is nullptr"); return; }
+	if (!NavSystem) { LOG_TRACE_WARN("NavSystem is nullptr"); return; }
 
 	FNavLocation RandomNavLocation;
 	

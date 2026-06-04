@@ -56,16 +56,13 @@ private:
 	TObjectPtr<AOB_BossCharacter> BossCharacter;
 	
 	UPROPERTY()
-	UOB_BossFSMComponent* FSMComp;
+	TObjectPtr<UOB_BossFSMComponent> FSMComp;
 	
 	UPROPERTY()
-	UAIPerceptionComponent* PerceptionComp;
+	TObjectPtr<UAIPerceptionComponent> PerceptionComp;
 	
 	UPROPERTY()
-	UWorld* World;
-	
-	UPROPERTY()
-	UNavigationSystemV1* NavSystem;
+	TObjectPtr<UNavigationSystemV1> NavSystem;
 	
 	// void OnMoveCompleted(FAIRequestID RequestID,  EPathFollowingResult::Type Result) override;
 	

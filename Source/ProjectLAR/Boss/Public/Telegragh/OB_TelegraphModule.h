@@ -17,7 +17,7 @@ enum class ETelegraphType : uint8
     Cone
 };
 
-class MYPROJECT_API FBossTelegraphModule
+class FBossTelegraphModule
 {
 public:
     DECLARE_DELEGATE(FOnAttackComplete);
@@ -49,17 +49,17 @@ public:
         switch (Type)
         {
             case ETelegraphType::Circle:
-                LOG_TRACE_INFO(TEXT("Type : Circle, Location : %s, Size : %s, Duration : %f"), Center.ToString(), Size.ToString(), Duration);
+                LOG_TRACE_INFO(TEXT("Type : Circle, Location : %s, Size : %s, Duration : %f"), *Center.ToString(), *Size.ToString(), Duration);
                 DrawDebugCircle(World, Center, Size.X, 32, FColor::Red, false, Duration, 0, 4.f, FVector(0, 1, 0), FVector(1, 0, 0), false);
                 break;
 
             case ETelegraphType::Box:
-                LOG_TRACE_INFO(TEXT("Type : Circle, Location : %s, Size : %s, Rotation : %s, Duration : %f"), Center.ToString(), Size.ToString(), Rotation.ToString() ,Duration);   
+                LOG_TRACE_INFO(TEXT("Type : Circle, Location : %s, Size : %s, Rotation : %s, Duration : %f"), *Center.ToString(), *Size.ToString(), *Rotation.ToString() ,Duration);   
                 DrawDebugBox(World, Center, Size, Rotation.Quaternion(), FColor::Red, false, Duration, 0, 4.f);
                 break;
             case ETelegraphType::Cone:
             
-                LOG_TRACE_INFO(TEXT("Type : Circle, Location : %s, Size : %s, Duration : %f"), Center.ToString(), Size.ToString(), Duration);
+                LOG_TRACE_INFO(TEXT("Type : Circle, Location : %s, Size : %s, Duration : %f"), *Center.ToString(), *Size.ToString(), Duration);
             
                 // Size.X = 반지름, Size.Y = 총 각도
                 DrawDebugCone(World, Center, Rotation.Vector(), Size.X, FMath::DegreesToRadians(Size.Y * 0.5f), FMath::DegreesToRadians(Size.Y * 0.5f), 16, FColor::Red, false, Duration, 0, 4.f);

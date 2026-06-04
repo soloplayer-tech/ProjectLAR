@@ -6,6 +6,7 @@
 #include "OB_BossCharacter.h"
 #include "OB_BossFSMComponent.h"
 #include "OB_LogManager.h"
+#include "Telegragh/OB_TelegraphModule.h"
 
 
 // Sets default values for this component's properties
@@ -17,12 +18,34 @@ UOB_PatternComponent::UOB_PatternComponent()
 	// ...
 }
 
+
+// Called when the game starts
+void UOB_PatternComponent::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	LOG_TRACE_INFO();
+	// ...
+	OwnerCharacter = Cast<AOB_BossCharacter>(GetOwner()); 
+	
+}
+
+
+// Called every frame
+void UOB_PatternComponent::TickComponent(float DeltaTime, ELevelTick TickType,
+                                         FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	// ...
+}
+
+
 void UOB_PatternComponent::SelectAndExecute()
 {
+	LOG_TRACE_INFO();
 	CurPattern = SelectPattern();
 	ExecutePattern(CurPattern);
-	
-	OwnerCharacter = Cast<AOB_BossCharacter>(GetOwner()); 
 }
 
 void UOB_PatternComponent::SetPhase(int32 Phase)
@@ -73,31 +96,70 @@ void UOB_PatternComponent::ExecuteHammer()
 {
 	LOG_TRACE_INFO("[Pattern Hammer]");
 	
-	FTimerHandle HammerTimer;
-	GetWorld()->GetTimerManager().SetTimer(
-		HammerTimer,
-		[this]()
+	FVector BossLocation = OwnerCharacter -> GetActorLocation();
+	FVector TargetLocation = OwnerCharacter -> GetFSMComponent() ->GetTargetActor() ->GetActorLocation();
+	
+	FVector LookDirection = TargetLocation - BossLocation;
+	
+	FVector CorrectForward = LookDirection.GetSafeNormal2D();
+	
+	FRotator NewRotation = CorrectForward.Rotation();
+	NewRotation.Pitch = 0.f; 
+	NewRotation.Roll = 0.f;
+	
+	LOG_TRACE_WARN("CorrectForward : %s, NewRotation : %s, LookDirection : %s", *CorrectForward.ToString(), *NewRotation.ToString(), *LookDirection.ToString());
+	
+	OwnerCharacter -> SetActorRotation(NewRotation);
+	
+	FVector BoxExtent = FVector(300.f, 100.f, 10.f);
+	FVector AdjustedCenter = BossLocation + (CorrectForward * BoxExtent.X);
+	
+	FBossTelegraphModule::SpawnTelegraph(
+		GetWorld(),
+		ETelegraphType::Box,
+		AdjustedCenter,
+		BoxExtent,
+		NewRotation,
+		1.0f,
+		FBossTelegraphModule::FOnAttackComplete::CreateLambda([this]()
 		{
-			OnPatternFinished(); 
-		},
-		1.5f,  // 텔레그래프 시간
-		false
+			if (OwnerCharacter -> GetFSMComponent()) OwnerCharacter -> GetFSMComponent() -> SetState(EBossBattleState::MOVE);
+		})
 	);
+	
 }
 
 void UOB_PatternComponent::ExecuteRush()
 {
 	LOG_TRACE_INFO("[Pattern Rush]");
 	
-	FTimerHandle HammerTimer;
-	GetWorld()->GetTimerManager().SetTimer(
-		HammerTimer,
-		[this]()
+	FVector BossLocation = OwnerCharacter -> GetActorLocation();
+	FVector TargetLocation = OwnerCharacter -> GetFSMComponent() ->GetTargetActor() ->GetActorLocation();
+	
+	FVector LookDirection = TargetLocation - BossLocation;
+	
+	FVector CorrectForward = LookDirection.GetSafeNormal2D();
+	
+	FRotator NewRotation = CorrectForward.Rotation();
+	NewRotation.Pitch = 0.f; 
+	NewRotation.Roll = 0.f;
+	
+	OwnerCharacter -> SetActorRotation(NewRotation);
+	
+	FVector BoxExtent = FVector(300.f, 100.f, 10.f);
+	FVector AdjustedCenter = BossLocation + (CorrectForward * BoxExtent.X);
+	
+	FBossTelegraphModule::SpawnTelegraph(
+		GetWorld(),
+		ETelegraphType::Box,
+		AdjustedCenter,
+		BoxExtent,
+		NewRotation,
+		1.0f,
+		FBossTelegraphModule::FOnAttackComplete::CreateLambda([this]()
 		{
-			OnPatternFinished(); 
-		},
-		1.5f,  // 텔레그래프 시간
-		false
+			if (OwnerCharacter -> GetFSMComponent()) OwnerCharacter -> GetFSMComponent() -> SetState(EBossBattleState::MOVE);
+		})
 	);
 }
 
@@ -105,15 +167,33 @@ void UOB_PatternComponent::ExecuteSlam()
 {
 	LOG_TRACE_INFO("[Pattern Slam]");
 	
-	FTimerHandle HammerTimer;
-	GetWorld()->GetTimerManager().SetTimer(
-		HammerTimer,
-		[this]()
+	FVector BossLocation = OwnerCharacter -> GetActorLocation();
+	FVector TargetLocation = OwnerCharacter -> GetFSMComponent() ->GetTargetActor() ->GetActorLocation();
+	
+	FVector LookDirection = TargetLocation - BossLocation;
+	
+	FVector CorrectForward = LookDirection.GetSafeNormal2D();
+	
+	FRotator NewRotation = CorrectForward.Rotation();
+	NewRotation.Pitch = 0.f; 
+	NewRotation.Roll = 0.f;
+	
+	OwnerCharacter -> SetActorRotation(NewRotation);
+	
+	FVector BoxExtent = FVector(300.f, 100.f, 10.f);
+	FVector AdjustedCenter = BossLocation + (CorrectForward * BoxExtent.X);
+	
+	FBossTelegraphModule::SpawnTelegraph(
+		GetWorld(),
+		ETelegraphType::Box,
+		AdjustedCenter,
+		BoxExtent,
+		NewRotation,
+		1.0f,
+		FBossTelegraphModule::FOnAttackComplete::CreateLambda([this]()
 		{
-			OnPatternFinished(); 
-		},
-		1.5f,  // 텔레그래프 시간
-		false
+			if (OwnerCharacter -> GetFSMComponent()) OwnerCharacter -> GetFSMComponent() -> SetState(EBossBattleState::MOVE);
+		})
 	);
 }
 
@@ -121,35 +201,35 @@ void UOB_PatternComponent::ExecuteCard()
 {
 	LOG_TRACE_INFO("[Pattern Card]");
 	
-	FTimerHandle HammerTimer;
-	GetWorld()->GetTimerManager().SetTimer(
-		HammerTimer,
-		[this]()
+	FVector BossLocation = OwnerCharacter -> GetActorLocation();
+	FVector TargetLocation = OwnerCharacter -> GetFSMComponent() ->GetTargetActor() ->GetActorLocation();
+	
+	FVector LookDirection = TargetLocation - BossLocation;
+	
+	FVector CorrectForward = LookDirection.GetSafeNormal2D();
+	
+	FRotator NewRotation = CorrectForward.Rotation();
+	NewRotation.Pitch = 0.f; 
+	NewRotation.Roll = 0.f;
+	
+	OwnerCharacter -> SetActorRotation(NewRotation);
+	
+	FVector BoxExtent = FVector(300.f, 100.f, 10.f);
+	FVector AdjustedCenter = BossLocation + (CorrectForward * BoxExtent.X);
+	
+	FBossTelegraphModule::SpawnTelegraph(
+		GetWorld(),
+		ETelegraphType::Box,
+		AdjustedCenter,
+		BoxExtent,
+		NewRotation,
+		1.0f,
+		FBossTelegraphModule::FOnAttackComplete::CreateLambda([this]()
 		{
-			OnPatternFinished(); 
-		},
-		1.5f,  // 텔레그래프 시간
-		false
+			if (OwnerCharacter -> GetFSMComponent()) OwnerCharacter -> GetFSMComponent() -> SetState(EBossBattleState::MOVE);
+		})
 	);
 }
 
 
-// Called when the game starts
-void UOB_PatternComponent::BeginPlay()
-{
-	Super::BeginPlay();
-
-	// ...
-	
-}
-
-
-// Called every frame
-void UOB_PatternComponent::TickComponent(float DeltaTime, ELevelTick TickType,
-                                         FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// ...
-}
 

@@ -33,10 +33,10 @@ private:
 	void ExecuteSlam();
 	void ExecuteCard();
 
-	int32 CurPhase = 1;
+	int32 CurPhase = 1; 
 	EAttackPattern CurPattern;
 	
-	AOB_BossCharacter* OwnerCharacter;
+	TObjectPtr<AOB_BossCharacter> OwnerCharacter;
 
 protected:
 	// Called when the game starts

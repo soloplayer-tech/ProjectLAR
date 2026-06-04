@@ -45,13 +45,13 @@ public:
 
 private:
 	UPROPERTY(VisibleAnywhere)
-	UOB_BossFSMComponent* FSMComponent;
+	TObjectPtr<UOB_BossFSMComponent> FSMComponent;
 	
 	UPROPERTY(VisibleAnywhere)
-	UOB_PatternComponent* PatternComponent;
+	TObjectPtr<UOB_PatternComponent> PatternComponent;
 	
 	UPROPERTY(VisibleAnywhere)
-	UOB_CombatComponent* CombatComponent;
+	TObjectPtr<UOB_CombatComponent> CombatComponent;
 
 protected:
 	// Called when the game starts or when spawned
