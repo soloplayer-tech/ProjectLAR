@@ -449,6 +449,15 @@ UTexture2D* ULActionSlotWidget::GetSkillIconTexture(
 	ELPlayerSkillID SkillID
 ) const
 {
+	if (ALPlayerCharacter* PlayerCharacter = GetPlayerCharacter())
+	{
+		if (UTexture2D* DataAssetIcon =
+			PlayerCharacter->GetSkillIconTexture(SkillID))
+		{
+			return DataAssetIcon;
+		}
+	}
+
 	switch (SkillID)
 	{
 	case ELPlayerSkillID::Meteor:
@@ -462,6 +471,9 @@ UTexture2D* ULActionSlotWidget::GetSkillIconTexture(
 
 	case ELPlayerSkillID::Wind:
 		return WindIconTexture;
+
+	case ELPlayerSkillID::FrostField:
+		return FrostFieldIconTexture ? FrostFieldIconTexture.Get() : WindIconTexture.Get();
 
 	case ELPlayerSkillID::None:
 	default:

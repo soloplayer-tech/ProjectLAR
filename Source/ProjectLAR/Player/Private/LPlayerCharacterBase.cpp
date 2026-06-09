@@ -141,9 +141,11 @@ void ALPlayerCharacterBase::UpdateDash(float DeltaTime)
 	}
 	
 	DashElapsedTime += DeltaTime;
+
+	const float SafeDashDuration = FMath::Max(DashDuration, 0.01f);
 	
 	const float Alpha = FMath::Clamp(
-		DashElapsedTime / DashDuration,
+		DashElapsedTime / SafeDashDuration,
 		0.0f,
 		1.0f
 		);
@@ -222,29 +224,60 @@ void ALPlayerCharacterBase::SetCurrentActionState(ELPlayerActionState NewState)
 	CurrentActionState = NewState;
 }
 
-bool ALPlayerCharacterBase::CanMove() const
+bool ALPlayerCharacterBase::CanStartAction(ELPlayerActionCommand Command) const
 {
-	return CurrentActionState == ELPlayerActionState::Idle 
-		|| CurrentActionState == ELPlayerActionState::Casting;
-	// 기본 상태 + 캐스팅 시전시간에만 에서만 이동 가능
+	switch (Command)
+	{
+	case ELPlayerActionCommand::Move:
+		return CurrentActionState == ELPlayerActionState::Idle
+			|| CanCancelCurrentActionWith(Command);
+
+	case ELPlayerActionCommand::BasicAttack:
+		return CurrentActionState == ELPlayerActionState::Idle;
+
+	case ELPlayerActionCommand::Dash:
+		return bCanDash && !bIsDashing
+			&& (
+				CurrentActionState == ELPlayerActionState::Idle
+				|| CanCancelCurrentActionWith(Command)
+			);
+
+	case ELPlayerActionCommand::Skill:
+		return CurrentActionState == ELPlayerActionState::Idle;
+
+	default:
+		return false;
+	}
 }
 
-bool ALPlayerCharacterBase::CanBasicAttack() const
+bool ALPlayerCharacterBase::CanCancelCurrentActionWith(ELPlayerActionCommand Command) const
 {
-	return CurrentActionState == ELPlayerActionState::Idle;
-	// 기본 상태에서만 베이직 어택 가능
+	switch (Command)
+	{
+	case ELPlayerActionCommand::Move:
+		return CurrentActionState == ELPlayerActionState::Casting;
+
+	case ELPlayerActionCommand::Dash:
+		return CurrentActionState == ELPlayerActionState::BasicAttack
+			|| CurrentActionState == ELPlayerActionState::Skill
+			|| CurrentActionState == ELPlayerActionState::Casting;
+
+	case ELPlayerActionCommand::BasicAttack:
+	case ELPlayerActionCommand::Skill:
+	default:
+		return false;
+	}
 }
 
-bool ALPlayerCharacterBase::CanDash() const
+bool ALPlayerCharacterBase::CancelCurrentActionFor(ELPlayerActionCommand Command)
 {
-	return bCanDash && !bIsDashing 
-	&& (
-		CurrentActionState == ELPlayerActionState::Idle	
-		|| CurrentActionState == ELPlayerActionState::BasicAttack
-		|| CurrentActionState == ELPlayerActionState::Skill
-		|| CurrentActionState == ELPlayerActionState::Casting
-		);
-	// 기본 상태 + 기본 공격 + 스킬 상태 중에도 대쉬 가능
+	if (!CanCancelCurrentActionWith(Command))
+	{
+		return false;
+	}
+
+	CancelCurrentAction();
+	return true;
 }
 
 bool ALPlayerCharacterBase::IsDashing() const
@@ -297,7 +330,22 @@ float ALPlayerCharacterBase::GetDashCooldownRatio() const
 
 bool ALPlayerCharacterBase::CanUseSkill() const
 {
-	return CurrentActionState == ELPlayerActionState::Idle;
+	return CanStartAction(ELPlayerActionCommand::Skill);
+}
+
+bool ALPlayerCharacterBase::CanMove() const
+{
+	return CanStartAction(ELPlayerActionCommand::Move);
+}
+
+bool ALPlayerCharacterBase::CanBasicAttack() const
+{
+	return CanStartAction(ELPlayerActionCommand::BasicAttack);
+}
+
+bool ALPlayerCharacterBase::CanDash() const
+{
+	return CanStartAction(ELPlayerActionCommand::Dash);
 }
 
 void ALPlayerCharacterBase::CancelCurrentAction()

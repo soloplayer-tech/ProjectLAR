@@ -19,6 +19,16 @@ public:
 	
 public:
 	void InitializeThunderStorm(const FVector& InCenterLocation);
+	void InitializeThunderStorm(
+		const FVector& InCenterLocation,
+		float InDamage,
+		float InDamageRadius,
+		float InStrikeRadius,
+		int32 InStrikeCount,
+		float InStrikeInterval,
+		float InStrikeHeightOffset,
+		UNiagaraSystem* InThunderStrikeNiagara
+	);
 	
 
 	

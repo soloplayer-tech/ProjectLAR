@@ -101,6 +101,10 @@ public:
 	ELPlayerActionState GetCurrentActionState() const;
 	
 	void SetCurrentActionState(ELPlayerActionState NewState);
+
+	bool CanStartAction(ELPlayerActionCommand Command) const;
+	bool CanCancelCurrentActionWith(ELPlayerActionCommand Command) const;
+	bool CancelCurrentActionFor(ELPlayerActionCommand Command);
 	
 	bool CanMove() const;
 	bool CanBasicAttack() const;

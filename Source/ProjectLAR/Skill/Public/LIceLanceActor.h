@@ -29,6 +29,17 @@ public:
 		float InFireDelay
 	);
 
+	void InitializeBezierPath(
+		const FVector& InStartPoint,
+		const FVector& InControlPoint,
+		const FVector& InEndPoint,
+		float InTravelDuration,
+		float InFireDelay,
+		float InDamage,
+		float InImpactDamageRadius,
+		UNiagaraSystem* InImpactEffect
+	);
+
 protected:
 	// 2차 베지어 곡선 위치 계산
 	FVector GetQuadraticBezierPoint(float T) const;

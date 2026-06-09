@@ -6,14 +6,18 @@
 #include "LPlayerCharacterBase.h"
 #include "LPlayerSkillSlot.h"
 #include "LPlayerSkillID.h"
+#include "LPlayerSkillDatabase.h"
 
 #include "ProjectLAR/Skill/Public/LIceLanceActor.h"
+#include "LGroundAreaSkillActor.h"
 #include "LMeteorActor.h"
 #include "LThunderActor.h"
 
 #include "LPlayerCharacter.generated.h"
 
 class UNiagaraSystem;
+class UAnimMontage;
+class UTexture2D;
 
 UCLASS()
 class PROJECTLAR_API ALPlayerCharacter : public ALPlayerCharacterBase
@@ -28,6 +32,9 @@ public:
 	virtual void Dash(const FVector& DashDirection) override;
 	
 	void BasicAttack(const FVector& TargetLocation);
+
+	UFUNCTION(BlueprintCallable, Category = "Combat|BasicAttack")
+	void TriggerBasicAttackHit();
 	
 	virtual void CancelCurrentAction() override;
 
@@ -114,6 +121,12 @@ public:
 	bool IsIdentityActive() const;
 
 	float GetFinalSkillDamage(float BaseDamage, ELPlayerSkillID SkillID) const;
+
+	UFUNCTION(BlueprintPure, Category = "Skill|Data")
+	FText GetSkillDisplayName(ELPlayerSkillID SkillID) const;
+
+	UFUNCTION(BlueprintPure, Category = "Skill|Data")
+	UTexture2D* GetSkillIconTexture(ELPlayerSkillID SkillID) const;
 	
 	
 	
@@ -123,6 +136,11 @@ protected:
 	void EndBasicAttack();
 	void EndSkill();
 	void EndBlink();
+	bool PrepareActionDirection(
+		const FVector& TargetLocation,
+		FVector& OutDirection,
+		FRotator& OutRotation
+	);
 	
 	void StartIdentityBuffVFX();
 	void StopIdentityBuffVFX();
@@ -135,15 +153,12 @@ protected:
 	void ClearAllSkillCooldowns();
 	// =======================================================================================
 	// Skill Execute
-	// 현재는 이름이 UseQSkill/UseWSkill이지만,
-	// 실제 의미는 Meteor/IceLance/Thunder/Wind 실행이다.
-	// 나중에 이름을 UseMeteorSkill() 식으로 바꾸면 더 좋다.
-
-	bool UseQSkill(const FVector& TargetLocation);
-	bool UseWSkill(const FVector& TargetLocation);
-	bool UseESkill(const FVector& TargetLocation);
-	bool UseRSkill(const FVector& TargetLocation);
-	bool UseVSkill(const FVector& TargetLocation);
+	bool UseMeteorSkill(const FVector& TargetLocation);
+	bool UseIceLanceSkill(const FVector& TargetLocation);
+	bool UseThunderSkill(const FVector& TargetLocation);
+	bool UseWindSkill(const FVector& TargetLocation);
+	bool UseFrostFieldSkill(const FVector& TargetLocation);
+	bool UseMeteorRainSkill(const FVector& TargetLocation);
 
 	bool ExecuteSkillByID(
 		ELPlayerSkillID SkillID,
@@ -181,16 +196,7 @@ protected:
 	// Identity Gain
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
-	float MeteorIdentityGain = 20.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
-	float IceLanceIdentityGain = 5.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
-	float ThunderIdentityGain = 8.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
-	float WindIdentityGain = 10.0f;
+	float FrostFieldIdentityGain = 1.0f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
 	float BasicAttackIdentityGain = 2.0f;
@@ -199,16 +205,7 @@ protected:
 	// Identity Gain - Additional Per Extra Target
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
-	float MeteorAdditionalIdentityGainPerTarget = 5.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
-	float IceLanceAdditionalIdentityGainPerTarget = 1.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
-	float ThunderAdditionalIdentityGainPerTarget = 2.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
-	float WindAdditionalIdentityGainPerTarget = 2.0f;
+	float FrostFieldAdditionalIdentityGainPerTarget = 0.0f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
 	float BasicAttackAdditionalIdentityGainPerTarget = 0.0f;
@@ -217,16 +214,7 @@ protected:
 	// Identity Gain - Max Per Hit Unit
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
-	float MeteorMaxIdentityGainPerCast = 30.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
-	float IceLanceMaxIdentityGainPerImpact = 8.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
-	float ThunderMaxIdentityGainPerStrike = 12.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
-	float WindMaxIdentityGainPerCast = 15.0f;
+	float FrostFieldMaxIdentityGainPerTick = 1.0f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
 	float BasicAttackMaxIdentityGainPerAttack = 2.0f;
@@ -266,14 +254,30 @@ protected:
 	// =======================================================================================
 	// Cooldown Internal - SkillID 기준
 
+	FLPlayerSkillTuning GetSkillTuning(ELPlayerSkillID SkillID) const;
+	FLPlayerSkillTuning GetFallbackSkillTuning(ELPlayerSkillID SkillID) const;
+	FLPlayerSkillCombatTuning GetSkillCombatTuning(ELPlayerSkillID SkillID) const;
+	FLPlayerSkillCombatTuning GetFallbackSkillCombatTuning(ELPlayerSkillID SkillID) const;
+	FLPlayerSkillIdentityTuning GetSkillIdentityTuning(ELPlayerSkillID SkillID) const;
+	FLPlayerSkillIdentityTuning GetFallbackSkillIdentityTuning(ELPlayerSkillID SkillID) const;
+	FLPlayerIceLanceTuning GetSkillIceLanceTuning() const;
+	FLPlayerIceLanceTuning GetFallbackSkillIceLanceTuning() const;
+	const ULPlayerSkillDataAsset* GetSkillDataAsset(ELPlayerSkillID SkillID) const;
+	UClass* GetSkillActorClass(ELPlayerSkillID SkillID) const;
+	UNiagaraSystem* GetSkillMainNiagara(ELPlayerSkillID SkillID) const;
+	UNiagaraSystem* GetSkillCastStartNiagara(ELPlayerSkillID SkillID) const;
+	UNiagaraSystem* GetSkillWarningNiagara(ELPlayerSkillID SkillID) const;
+	UNiagaraSystem* GetSkillImpactNiagara(ELPlayerSkillID SkillID) const;
+	float GetSkillCastStartEffectHeightOffset(ELPlayerSkillID SkillID) const;
 	void StartSkillCooldown(ELPlayerSkillID SkillID);
 	float GetSkillCooldownDuration(ELPlayerSkillID SkillID) const;
-
-	void ResetMeteorCooldown();
-	void ResetIceLanceCooldown();
-	void ResetThunderCooldown();
-	void ResetWindCooldown();
-	void ResetMeteorRainCooldown();
+	float GetSkillLockDuration(ELPlayerSkillID SkillID) const;
+	FTimerHandle* GetSkillCooldownTimerHandle(ELPlayerSkillID SkillID);
+	const FTimerHandle* GetSkillCooldownTimerHandle(ELPlayerSkillID SkillID) const;
+	void StartSkillLock(ELPlayerSkillID SkillID);
+	void PlaySkillMontage(ELPlayerSkillID SkillID);
+	void StopActiveSkillMontage();
+	void ResetSkillCooldown(ELPlayerSkillID SkillID);
 	
 	// =======================================================================================
 	// Casting
@@ -289,6 +293,7 @@ protected:
 	float GetSkillManaCost(ELPlayerSkillID SkillID) const;
 	void RegenerateMana(float DeltaTime);
 	bool DoesSkillNeedCasting(ELPlayerSkillID SkillID) const;
+	bool CommitSkillCostAndCooldown(ELPlayerSkillID SkillID);
 	
 	
 	void StartSkillCast(
@@ -312,35 +317,23 @@ protected:
 	void CancelSkillCast();
 	
 	// =======================================================================================
-	// Skill Cast Duration
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Cast")
-	float MeteorCastDuration = 2.f;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Cast")
-	float ThunderCastDuration = 2.f;
-	
-	// =======================================================================================
-	// Skill Casting Niagara
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Cast|Effect")
-	TObjectPtr<UNiagaraSystem> MeteorCastStartEffect;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Cast|Effect")
-	TObjectPtr<UNiagaraSystem> ThunderCastStartEffect;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Cast|Effect")
-	float MeteorCastEffectHeightOffset = 5.f;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Cast|Effect")
-	float ThunderCastEffectHeightOffset = 5.f;
-	
-	
-	
+	// Skill Data
+	// 지정된 Database에서 스킬 DataAsset을 찾으면 이 값이 우선한다.
+	// Database가 비어 있거나 해당 SkillID가 없으면 아래 legacy UPROPERTY 값을 fallback으로 사용한다.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Data")
+	TObjectPtr<ULPlayerSkillDatabase> SkillDatabase;
+
+	UPROPERTY()
+	TObjectPtr<UAnimMontage> ActiveSkillMontage;
 	
 	// =======================================================================================
 	// Basic Attack
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack")
 	TObjectPtr<UNiagaraSystem> BasicAttackNiagara;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack")
+	TObjectPtr<UAnimMontage> BasicAttackMontage;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack")
 	float BasicAttackDuration = 1.0f;
@@ -368,6 +361,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack|Debug")
 	bool bDrawBasicAttackDamageDebug = true;
+
+	FVector PendingBasicAttackDirection = FVector::ForwardVector;
+	bool bBasicAttackHitTriggered = false;
 	
 	void ApplyBasicAttackDamage(const FVector& AttackDirection);
 	
@@ -384,123 +380,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Dash|Blink")
 	TObjectPtr<UNiagaraSystem> BlinkEndEffect;
 
-	// =======================================================================================
-	// Meteor Skill
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Meteor")
-	TSubclassOf<ALMeteorActor> MeteorActorClass;
-
-	// 행동 잠금 시간: Meteor 발동 후 캐릭터가 Skill 상태로 묶이는 시간
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Meteor")
-	float MeteorSkillLockDuration = 0.5f;
-	
-
-	// =======================================================================================
-	// Ice Lance Skill
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|IceLance")
-	TSubclassOf<ALIceLanceActor> IceLanceClass;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|IceLance")
-	int32 IceLanceCount = 5;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|IceLance")
-	float IceLanceTravelDuration = 0.45f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|IceLance")
-	float IceLanceReadyBackOffset = 70.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|IceLance")
-	float IceLanceReadySideSpacing = 110.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|IceLance")
-	float IceLanceReadyHeight = 180.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|IceLance")
-	float IceLanceReadyHeightFalloff = 25.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|IceLance")
-	float IceLanceCurveSideOffset = 180.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|IceLance")
-	float IceLanceCurveHeightOffset = 120.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|IceLance")
-	float IceLanceEndHeightOffset = 60.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|IceLance")
-	float IceLanceReadyDuration = 0.18f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|IceLance")
-	float IceLanceFireInterval = 0.05f;
-
-	// 행동 잠금 시간
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|IceLance")
-	float IceLanceSkillLockDuration = 0.35f;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|IceLance")
-	TObjectPtr<UNiagaraSystem> WIceLanceNiagara;
-	
-	// =======================================================================================
-	// Thunder Skill
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Thunder")
-	TSubclassOf<ALThunderActor> ThunderStormActorClass;
-	
-	// 행동 잠금 시간
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Thunder")
-	float ThunderSkillLockDuration = 0.45f;
-	
-	// =======================================================================================
-	// Wind Skill
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Wind")
-	TObjectPtr<UNiagaraSystem> RWindNiagara;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Wind")
-	float WindForwardOffset = 180.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Wind")
-	float WindHeightOffset = 60.0f;
-
-	// 행동 잠금 시간
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Wind")
-	float WindSkillLockDuration = 0.35f;
-	
 	void ApplyWindDamage(const FVector& AttackDirection);
-	
-	// =======================================================================================
-	// Wind Damage
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Wind|Damage")
-	float WindDamage = 15.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Wind|Damage")
-	float WindDamageCenterOffset = 260.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Wind|Damage")
-	float WindDamageHeightOffset = 60.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Wind|Damage")
-	FVector WindDamageBoxHalfExtent = FVector(260.0f, 120.0f, 80.0f);
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Wind|Debug")
-	bool bDrawWindDamageDebug = true;
 
 	// =======================================================================================
 	// Skill Cooldown - 실제 스킬 기준 재사용 대기시간
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Cooldown")
-	float MeteorCooldown = 3.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Cooldown")
-	float IceLanceCooldown = 4.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Cooldown")
-	float ThunderCooldown = 5.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Cooldown")
-	float WindCooldown = 2.0f;
+	float FrostFieldCooldown = 6.0f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Cooldown")
 	float MeteorRainCooldown = 10.0f;
@@ -508,16 +394,34 @@ protected:
 	// =======================================================================================
 	// Skill Mana Cost
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Mana")
-	float MeteorManaCost = 1500.f;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Mana")
-	float IceLanceManaCost = 1200.f;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Mana")
-	float ThunderManaCost = 1500.f;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Mana")
-	float WindManaCost = 500.f;
+	float FrostFieldManaCost = 900.f;
+
+	// =======================================================================================
+	// Frost Field
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|FrostField")
+	TSubclassOf<ALGroundAreaSkillActor> FrostFieldActorClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|FrostField")
+	TObjectPtr<UNiagaraSystem> FrostFieldNiagara;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|FrostField")
+	float FrostFieldDamage = 8.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|FrostField")
+	float FrostFieldRadius = 320.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|FrostField")
+	float FrostFieldDuration = 4.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|FrostField")
+	float FrostFieldTickInterval = 0.5f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|FrostField")
+	float FrostFieldSkillLockDuration = 0.45f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|FrostField")
+	float FrostFieldSpawnHeightOffset = 0.0f;
 	
 	// =======================================================================================
 	// Skill Equip - 슬롯에 장착된 실제 스킬
@@ -561,6 +465,7 @@ private:
 	FTimerHandle IceLanceCooldownTimerHandle;
 	FTimerHandle ThunderCooldownTimerHandle;
 	FTimerHandle WindCooldownTimerHandle;
+	FTimerHandle FrostFieldCooldownTimerHandle;
 	FTimerHandle MeteorRainCooldownTimerHandle;
 	
 	// 캐스팅 타이머

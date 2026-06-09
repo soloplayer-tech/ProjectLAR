@@ -14,3 +14,12 @@ enum class ELPlayerActionState : uint8
 	HitReaction		UMETA(DisplayName = "Hit Reaction"),
 	Dead			UMETA(DisplayName = "Dead")
 };
+
+UENUM(BlueprintType)
+enum class ELPlayerActionCommand : uint8
+{
+	Move			UMETA(DisplayName = "Move"),
+	BasicAttack		UMETA(DisplayName = "Basic Attack"),
+	Dash			UMETA(DisplayName = "Dash"),
+	Skill			UMETA(DisplayName = "Skill")
+};

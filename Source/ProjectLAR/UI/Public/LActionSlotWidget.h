@@ -108,6 +108,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Action Slot|Skill Icon")
 	TObjectPtr<UTexture2D> WindIconTexture;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Action Slot|Skill Icon")
+	TObjectPtr<UTexture2D> FrostFieldIconTexture;
+
 private:
 	ELPlayerSkillID CachedSkillID = ELPlayerSkillID::None;
 };

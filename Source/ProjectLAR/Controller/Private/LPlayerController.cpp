@@ -335,10 +335,7 @@ void ALPlayerController::MoveToMouseCursor()
 		return;
 	}
 
-	if (PlayerCharacter->GetCurrentActionState() == ELPlayerActionState::Casting)
-	{
-		PlayerCharacter->CancelCurrentAction();
-	}
+	PlayerCharacter->CancelCurrentActionFor(ELPlayerActionCommand::Move);
 
 	FVector TargetLocation;
 	
@@ -387,8 +384,7 @@ void ALPlayerController::DashInput()
 	
 	StopMovement();
 
-	// 기본 공격 중 대쉬하면 기존 행동은 끊는다
-	PlayerCharacter->CancelCurrentAction();
+	PlayerCharacter->CancelCurrentActionFor(ELPlayerActionCommand::Dash);
 	
 	PlayerCharacter->Dash(DashDirection);
 }
@@ -402,7 +398,7 @@ void ALPlayerController::BasicAttackInput()
 		return;
 	}
 	
-	if (!PlayerCharacter->CanBasicAttack())
+	if (!PlayerCharacter->CanStartAction(ELPlayerActionCommand::BasicAttack))
 	{
 		return;
 	}
