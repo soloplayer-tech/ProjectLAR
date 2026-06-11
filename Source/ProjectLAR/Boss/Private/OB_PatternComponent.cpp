@@ -6,6 +6,9 @@
 #include "OB_BossCharacter.h"
 #include "OB_BossFSMComponent.h"
 #include "OB_LogManager.h"
+#include "opencv2/core/mat.hpp"
+#include "opencv2/core/mat.hpp"
+#include "opencv2/core/mat.hpp"
 #include "Telegragh/OB_TelegraphModule.h"
 
 
@@ -15,7 +18,11 @@ UOB_PatternComponent::UOB_PatternComponent()
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = false;
+	
 	// ...
+	Mat_Circle = nullptr;
+	Mat_Box = nullptr;
+	Mat_Cone = nullptr;
 }
 
 
@@ -71,8 +78,8 @@ EAttackPattern UOB_PatternComponent::SelectPattern()
 {
 	// TODO : 나중에 여기서 거리/HP 조건 추가 
 	TArray AvailablePatterns = {
-		EAttackPattern::HAMMER,
-		EAttackPattern::RUSH,
+		EAttackPattern::AXE,
+		EAttackPattern::RUSH
 	};
 
 	int32 index = FMath::RandRange(0, AvailablePatterns.Num() - 1);
@@ -85,47 +92,51 @@ void UOB_PatternComponent::ExecutePattern(EAttackPattern Pattern)
 	
 	switch (Pattern)
 	{
-	case EAttackPattern::HAMMER:	ExecuteHammer();	break;
+	case EAttackPattern::AXE:	ExecuteAxe();	break;
 	case EAttackPattern::RUSH:		ExecuteRush();		break;
 	case EAttackPattern::SLAM:		ExecuteSlam();		break;
 	case EAttackPattern::CARD:		ExecuteCard();		break;
 	}	
 }
 
-void UOB_PatternComponent::ExecuteHammer()
+void UOB_PatternComponent::ExecuteAxe()
 {
-	LOG_TRACE_INFO("[Pattern Hammer]");
+	LOG_TRACE_INFO("[Pattern Axe]");
+	
+	if (!Mat_Cone) 
+	{
+		LOG_TRACE_WARN("Telegraph Material is not assigned!");
+		return;
+	}
 	
 	FVector BossLocation = OwnerCharacter -> GetActorLocation();
 	FVector TargetLocation = OwnerCharacter -> GetFSMComponent() ->GetTargetActor() ->GetActorLocation();
 	
 	FVector LookDirection = TargetLocation - BossLocation;
+	
 	FVector CorrectForward = LookDirection.GetSafeNormal2D();
 	
 	FRotator NewRotation = CorrectForward.Rotation();
-	NewRotation.Pitch = 0.f; 
+	NewRotation.Pitch = -30.f; 
 	NewRotation.Roll = 0.f;
-	
-	LOG_TRACE_WARN("CorrectForward : %s, NewRotation : %s, LookDirection : %s", *CorrectForward.ToString(), *NewRotation.ToString(), *LookDirection.ToString());
 	
 	OwnerCharacter -> SetActorRotation(NewRotation);
 	
-	FVector BoxExtent = FVector(300.f, 100.f, 10.f);
-	FVector AdjustedCenter = BossLocation + (CorrectForward * BoxExtent.X);
+	FVector ConeExtent = FVector(500.f, 240.f, 10.f);
+	
 	
 	FBossTelegraphModule::SpawnTelegraph(
 		GetWorld(),
-		ETelegraphType::Box,
-		AdjustedCenter,
-		BoxExtent,
+		Mat_Cone,
+		ETelegraphType::Cone,
+		BossLocation,
+		ConeExtent,
 		NewRotation,
 		1.0f,
-		FBossTelegraphModule::FOnAttackComplete::CreateLambda([this]()
+		FBossTelegraphModule::FOnAttackComplete::CreateLambda([this](bool bHit)
 		{
-			if (OwnerCharacter -> GetFSMComponent()) OwnerCharacter -> GetFSMComponent() -> SetState(EBossBattleState::IDLE);
-		}),
-		*OwnerCharacter,
-		EAttackPattern::HAMMER
+			if (OwnerCharacter -> GetFSMComponent()) OwnerCharacter -> GetFSMComponent() -> SetState(EBossBattleState::MOVE);
+		})
 	);
 	
 }
@@ -134,10 +145,17 @@ void UOB_PatternComponent::ExecuteRush()
 {
 	LOG_TRACE_INFO("[Pattern Rush]");
 	
+	if (!Mat_Box) 
+	{
+		LOG_TRACE_WARN("Telegraph Material is not assigned!");
+		return;
+	}
+	
 	FVector BossLocation = OwnerCharacter -> GetActorLocation();
-	FVector TargetLocation = OwnerCharacter -> GetFSMComponent() ->GetTargetActor() ->GetActorLocation();
+	FVector TargetLocation = OwnerCharacter -> GetFSMComponent() -> GetTargetActor() ->GetActorLocation();
 	
 	FVector LookDirection = TargetLocation - BossLocation;
+	
 	FVector CorrectForward = LookDirection.GetSafeNormal2D();
 	
 	FRotator NewRotation = CorrectForward.Rotation();
@@ -146,24 +164,22 @@ void UOB_PatternComponent::ExecuteRush()
 	
 	OwnerCharacter -> SetActorRotation(NewRotation);
 	
-	FVector BoxExtent = FVector(300.f, 100.f, 10.f);
+	FVector BoxExtent = FVector(500.f, 100.f, 300.f);
 	FVector AdjustedCenter = BossLocation + (CorrectForward * BoxExtent.X);
-	
-	
 	
 	FBossTelegraphModule::SpawnTelegraph(
 		GetWorld(),
+		Mat_Box,
 		ETelegraphType::Box,
 		AdjustedCenter,
 		BoxExtent,
 		NewRotation,
 		1.0f,
-		FBossTelegraphModule::FOnAttackComplete::CreateLambda([this]()
+		FBossTelegraphModule::FOnAttackComplete::CreateLambda([this](bool bHitBox)
 		{
-			if (OwnerCharacter -> GetFSMComponent()) OwnerCharacter -> GetFSMComponent() -> SetState(EBossBattleState::IDLE);
-		}),
-		*OwnerCharacter,
-		EAttackPattern::RUSH
+			ExecuteSlam();
+		})
+		
 	);
 }
 
@@ -171,10 +187,17 @@ void UOB_PatternComponent::ExecuteSlam()
 {
 	LOG_TRACE_INFO("[Pattern Slam]");
 	
+	if (!Mat_Circle) 
+	{
+		LOG_TRACE_WARN("Telegraph Material is not assigned!");
+		return;
+	}
+	
 	FVector BossLocation = OwnerCharacter -> GetActorLocation();
 	FVector TargetLocation = OwnerCharacter -> GetFSMComponent() ->GetTargetActor() ->GetActorLocation();
 	
 	FVector LookDirection = TargetLocation - BossLocation;
+	
 	FVector CorrectForward = LookDirection.GetSafeNormal2D();
 	
 	FRotator NewRotation = CorrectForward.Rotation();
@@ -183,22 +206,20 @@ void UOB_PatternComponent::ExecuteSlam()
 	
 	OwnerCharacter -> SetActorRotation(NewRotation);
 	
-	FVector BoxExtent = FVector(300.f, 100.f, 10.f);
-	FVector AdjustedCenter = BossLocation + (CorrectForward * BoxExtent.X);
+	FVector CircleExtent = FVector(1500.f, 120.f, 10.f);
 	
 	FBossTelegraphModule::SpawnTelegraph(
 		GetWorld(),
-		ETelegraphType::Box,
-		AdjustedCenter,
-		BoxExtent,
+		Mat_Circle,
+		ETelegraphType::Circle,
+		BossLocation + FVector(1000.f, 0.f, 0.f),
+		CircleExtent,
 		NewRotation,
 		1.0f,
-		FBossTelegraphModule::FOnAttackComplete::CreateLambda([this]()
+		FBossTelegraphModule::FOnAttackComplete::CreateLambda([this](bool bHit)
 		{
-			if (OwnerCharacter -> GetFSMComponent()) OwnerCharacter -> GetFSMComponent() -> SetState(EBossBattleState::IDLE);
-		}),
-		*OwnerCharacter,
-		EAttackPattern::SLAM
+			if (OwnerCharacter -> GetFSMComponent()) OwnerCharacter -> GetFSMComponent() -> SetState(EBossBattleState::MOVE);
+		})
 	);
 }
 
@@ -206,6 +227,12 @@ void UOB_PatternComponent::ExecuteCard()
 {
 	LOG_TRACE_INFO("[Pattern Card]");
 	
+	if (!Mat_Circle) 
+	{
+		LOG_TRACE_WARN("Telegraph Material is not assigned!");
+		return;
+	}
+	
 	FVector BossLocation = OwnerCharacter -> GetActorLocation();
 	FVector TargetLocation = OwnerCharacter -> GetFSMComponent() ->GetTargetActor() ->GetActorLocation();
 	
@@ -219,24 +246,21 @@ void UOB_PatternComponent::ExecuteCard()
 	
 	OwnerCharacter -> SetActorRotation(NewRotation);
 	
-	FVector BoxExtent = FVector(300.f, 100.f, 10.f);
-	FVector AdjustedCenter = BossLocation + (CorrectForward * BoxExtent.X);
+	FVector CircleExtent = FVector(1500.f, 120.f, 10.f);
 	
 	FBossTelegraphModule::SpawnTelegraph(
 		GetWorld(),
-		ETelegraphType::Box,
-		AdjustedCenter,
-		BoxExtent,
+		Mat_Circle,
+		ETelegraphType::Circle,
+		BossLocation + FVector(1000.f, 0.f, 0.f),
+		CircleExtent,
 		NewRotation,
 		1.0f,
-		FBossTelegraphModule::FOnAttackComplete::CreateLambda([this]()
+		FBossTelegraphModule::FOnAttackComplete::CreateLambda([this](bool bHit)
 		{
-			if (OwnerCharacter -> GetFSMComponent()) OwnerCharacter -> GetFSMComponent() -> SetState(EBossBattleState::IDLE);
-		}),
-		*OwnerCharacter,
-		EAttackPattern::CARD
+			if (OwnerCharacter -> GetFSMComponent()) OwnerCharacter -> GetFSMComponent() -> SetState(EBossBattleState::MOVE);
+		})
 	);
 }
-
 
 

@@ -69,7 +69,6 @@ private:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	
 	virtual void OnPossess(APawn* InPawn) override; // 원본이 protected이기 때문에 protected안에 선언
 
 public:

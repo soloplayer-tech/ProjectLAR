@@ -10,7 +10,7 @@
 UENUM(BlueprintType)
 enum class EAttackPattern : uint8
 {
-	HAMMER	UMETA(DisplayName = "Hammer Pattern"),
+	AXE		UMETA(DisplayName = "Axe Pattern"),
 	RUSH	UMETA(DisplayName = "Rush Pattern"),
 	SLAM	UMETA(DisplayName = "Slam Pattern"),
 	CARD	UMETA(DisplayName = "Card Pattern"),

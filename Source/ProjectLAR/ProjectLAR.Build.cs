@@ -25,7 +25,7 @@ public class ProjectLAR : ModuleRules
       "EnhancedInput"
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "Niagara", "EnhancedInput", "AITestSuite" });
+		PrivateDependencyModuleNames.AddRange(new string[] { "Niagara", "EnhancedInput", "AITestSuite", "OpenCV"});
     
     // 팀원 ROLE에 따라 나뉜 파트를 한번에 빌드할 때 사용
 		// System.IO.Path.Combine(ModuleDirectory, "[ROLE]/Public") 형식으로 입력

@@ -41,6 +41,7 @@ public:
 	float GetCurHP() const { return CurHP; }
 	float GetHPRatio() const { return CurHP / MaxHP; }
 	
+	// Damage UI
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<ALFloatingDamageActor> FloatingDamageActorClass;
 
