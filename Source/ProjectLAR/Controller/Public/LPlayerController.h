@@ -12,6 +12,8 @@ class UInputMappingContext;
 class UInputAction;
 class ULPlayerUIWidget;
 class ULSkillWindowWidget;
+class ULInventoryWindowWidget;
+class ULEquipmentWindowWidget;
 class ALInteractableActor;
 
 UCLASS()
@@ -57,6 +59,40 @@ protected:
 	void ToggleSkillWindowInput();
 	void CreateSkillWindowWidget();
 	void BindSkillWindowToPawn(APawn* InPawn);
+
+	// =========================
+	// Inventory Window
+	// =========================
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> ToggleInventoryWindowAction;
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<ULInventoryWindowWidget> InventoryWindowWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<ULInventoryWindowWidget> InventoryWindowWidget;
+
+	void ToggleInventoryWindowInput();
+	void CreateInventoryWindowWidget();
+	void BindInventoryWindowToPawn(APawn* InPawn);
+
+	// =========================
+	// Equipment Window
+	// =========================
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> ToggleEquipmentWindowAction;
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<ULEquipmentWindowWidget> EquipmentWindowWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<ULEquipmentWindowWidget> EquipmentWindowWidget;
+
+	void ToggleEquipmentWindowInput();
+	void CreateEquipmentWindowWidget();
+	void BindEquipmentWindowToPawn(APawn* InPawn);
 	
 	// 인터렉트 actor
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
@@ -106,6 +142,18 @@ private:
 	
 	UPROPERTY(EditAnywhere, Category = "Skill")
 	TObjectPtr<UInputAction> SkillVAction;
+
+	UPROPERTY(EditAnywhere, Category = "Item")
+	TObjectPtr<UInputAction> QuickItem1Action;
+
+	UPROPERTY(EditAnywhere, Category = "Item")
+	TObjectPtr<UInputAction> QuickItem2Action;
+
+	UPROPERTY(EditAnywhere, Category = "Item")
+	TObjectPtr<UInputAction> QuickItem3Action;
+
+	UPROPERTY(EditAnywhere, Category = "Item")
+	TObjectPtr<UInputAction> QuickItem4Action;
 	
 	
 	UPROPERTY(EditAnywhere, Category = "UI")
@@ -132,9 +180,15 @@ private:
 	void SkillDInput();
 	void SkillFInput();
 	void SkillVInput();
+
+	void QuickItem1Input();
+	void QuickItem2Input();
+	void QuickItem3Input();
+	void QuickItem4Input();
 	
 	
 	void HandleSkillInput(ELPlayerSkillSlot SkillSlot);
+	void HandleQuickItemInput(int32 QuickItemSlotIndex);
 	
 	void BindPlayerUIToPawn(APawn* InPawn);
 

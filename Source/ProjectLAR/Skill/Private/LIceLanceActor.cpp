@@ -93,6 +93,37 @@ void ALIceLanceActor::InitializeBezierPath(
 	float InFireDelay
 )
 {
+	InitializeBezierPath(
+		InStartPoint,
+		InControlPoint,
+		InEndPoint,
+		InTravelDuration,
+		InFireDelay,
+		IceLanceDamage,
+		ImpactDamageRadius,
+		ImpactEffect
+	);
+}
+
+void ALIceLanceActor::InitializeBezierPath(
+	const FVector& InStartPoint,
+	const FVector& InControlPoint,
+	const FVector& InEndPoint,
+	float InTravelDuration,
+	float InFireDelay,
+	float InDamage,
+	float InImpactDamageRadius,
+	UNiagaraSystem* InImpactEffect
+)
+{
+	IceLanceDamage = FMath::Max(0.0f, InDamage);
+	ImpactDamageRadius = FMath::Max(1.0f, InImpactDamageRadius);
+
+	if (InImpactEffect)
+	{
+		ImpactEffect = InImpactEffect;
+	}
+
 	StartPoint = InStartPoint;
 	ControlPoint = InControlPoint;
 	EndPoint = InEndPoint;
@@ -153,6 +184,14 @@ void ALIceLanceActor::ApplyImpactDamage()
 			ImpactEffect,
 			ImpactLocation,
 			GetActorRotation()
+		);
+	}
+
+	if (ALPlayerCharacter* OwnerPlayer = Cast<ALPlayerCharacter>(GetOwner()))
+	{
+		OwnerPlayer->PlaySkillImpactSound(
+			ELPlayerSkillID::IceLance,
+			ImpactLocation
 		);
 	}
 

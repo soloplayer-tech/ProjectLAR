@@ -9,6 +9,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInstanceDynamic.h"
 
+#include "ProjectLAR/Item/Public/LInventoryComponent.h"
+#include "ProjectLAR/Item/Public/LItemDataAsset.h"
 #include "ProjectLAR/Player/Public/LPlayerCharacter.h"
 #include "ProjectLAR/UI/Public/LUIDragDropOperation.h"
 
@@ -30,7 +32,23 @@ void ULActionSlotWidget::NativeConstruct()
 
 	if (IMG_SlotIcon)
 	{
+		IMG_SlotIcon->SetVisibility(ESlateVisibility::HitTestInvisible);
 		IMG_SlotIcon->SetRenderOpacity(0.0f);
+	}
+
+	if (TXT_SlotKey)
+	{
+		TXT_SlotKey->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+
+	if (IMG_CooldownRadial)
+	{
+		IMG_CooldownRadial->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+
+	if (TXT_Cooldown)
+	{
+		TXT_Cooldown->SetVisibility(ESlateVisibility::HitTestInvisible);
 	}
 
 	InitCooldownUI();
@@ -59,6 +77,44 @@ FReply ULActionSlotWidget::NativeOnMouseButtonDown(
 	const FPointerEvent& InMouseEvent
 )
 {
+	int32 QuickItemSlotIndex = INDEX_NONE;
+
+	if (TryConvertToQuickItemSlotIndex(QuickItemSlotIndex))
+	{
+		ULInventoryComponent* InventoryComponent =
+			GetInventoryComponent();
+
+		if (!InventoryComponent)
+		{
+			return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
+		}
+
+		if (InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
+		{
+			if (InventoryComponent->GetQuickItemSlotData(QuickItemSlotIndex))
+			{
+				return UWidgetBlueprintLibrary::DetectDragIfPressed(
+					InMouseEvent,
+					this,
+					EKeys::LeftMouseButton
+				).NativeReply;
+			}
+
+			return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
+		}
+
+		if (InMouseEvent.GetEffectingButton() == EKeys::RightMouseButton)
+		{
+			if (InventoryComponent->UseQuickItemSlot(QuickItemSlotIndex))
+			{
+				RefreshSlotFromPlayer();
+				return FReply::Handled();
+			}
+		}
+
+		return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
+	}
+
 	if (InMouseEvent.GetEffectingButton() != EKeys::LeftMouseButton)
 	{
 		return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
@@ -109,6 +165,49 @@ void ULActionSlotWidget::NativeOnDragDetected(
 		InMouseEvent,
 		OutOperation
 	);
+
+	int32 QuickItemSlotIndex = INDEX_NONE;
+
+	if (TryConvertToQuickItemSlotIndex(QuickItemSlotIndex))
+	{
+		ULInventoryComponent* InventoryComponent =
+			GetInventoryComponent();
+
+		if (!InventoryComponent)
+		{
+			return;
+		}
+
+		ULItemDataAsset* ItemData =
+			InventoryComponent->GetQuickItemSlotData(QuickItemSlotIndex);
+
+		if (!ItemData)
+		{
+			return;
+		}
+
+		ULUIDragDropOperation* DragOperation =
+			NewObject<ULUIDragDropOperation>();
+
+		if (!DragOperation)
+		{
+			return;
+		}
+
+		DragOperation->PayloadType = ELDragPayloadType::Item;
+		DragOperation->ItemData = ItemData;
+		DragOperation->IconTexture = ItemData->IconTexture.Get();
+		DragOperation->DisplayName = ItemData->DisplayName;
+		DragOperation->ItemCount =
+			InventoryComponent->GetQuickItemSlotQuantity(QuickItemSlotIndex);
+		DragOperation->bFromActionSlot = true;
+		DragOperation->SourceSlotKey = SlotKey;
+		DragOperation->DefaultDragVisual = this;
+		DragOperation->Pivot = EDragPivot::MouseDown;
+
+		OutOperation = DragOperation;
+		return;
+	}
 
 	if (SlotType != ELActionSlotType::Skill)
 	{
@@ -190,6 +289,32 @@ void ULActionSlotWidget::NativeOnDragCancelled(
 
 	if (DragOperation->SourceSlotKey != SlotKey)
 	{
+		return;
+	}
+
+	int32 SourceQuickItemSlotIndex = INDEX_NONE;
+
+	if (TryConvertToQuickItemSlotIndex(SourceQuickItemSlotIndex)
+		&& DragOperation->PayloadType == ELDragPayloadType::Item)
+	{
+		ULInventoryComponent* InventoryComponent =
+			GetInventoryComponent();
+
+		if (!InventoryComponent)
+		{
+			return;
+		}
+
+		InventoryComponent->ClearQuickItemSlot(SourceQuickItemSlotIndex);
+		RefreshSlotFromPlayer();
+
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("ActionSlot Item Drag Cancelled / Clear Slot=%s"),
+			*UEnum::GetValueAsString(SlotKey)
+		);
+
 		return;
 	}
 
@@ -301,6 +426,79 @@ bool ULActionSlotWidget::NativeOnDrop(
 		return true;
 	}
 
+	if (DragOperation->PayloadType == ELDragPayloadType::Item)
+	{
+		int32 QuickItemSlotIndex = INDEX_NONE;
+
+		if (!TryConvertToQuickItemSlotIndex(QuickItemSlotIndex))
+		{
+			UE_LOG(
+				LogTemp,
+				Warning,
+				TEXT("ActionSlot Drop Failed: Cannot convert SlotKey to QuickItemSlot / Slot=%s"),
+				*UEnum::GetValueAsString(SlotKey)
+			);
+
+			return false;
+		}
+
+		ULInventoryComponent* InventoryComponent =
+			GetInventoryComponent();
+
+		if (!InventoryComponent)
+		{
+			UE_LOG(
+				LogTemp,
+				Warning,
+				TEXT("ActionSlot Drop Failed: InventoryComponent is null")
+			);
+
+			return false;
+		}
+
+		if (DragOperation->bFromActionSlot)
+		{
+			int32 SourceQuickItemSlotIndex = INDEX_NONE;
+
+			if (!TryConvertActionSlotKeyToQuickItemSlotIndex(
+				DragOperation->SourceSlotKey,
+				SourceQuickItemSlotIndex
+			))
+			{
+				return false;
+			}
+
+			if (!InventoryComponent->MoveQuickItemSlot(
+				SourceQuickItemSlotIndex,
+				QuickItemSlotIndex
+			))
+			{
+				return false;
+			}
+		}
+		else if (!InventoryComponent->AssignQuickItemSlot(
+			QuickItemSlotIndex,
+			DragOperation->ItemData
+		))
+		{
+			return false;
+		}
+
+		RefreshSlotFromPlayer();
+
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("Dropped Item %s on Slot %s"),
+			DragOperation->ItemData
+				? *DragOperation->ItemData->ItemID.ToString()
+				: TEXT("None"),
+			*UEnum::GetValueAsString(SlotKey)
+		);
+
+		return true;
+	}
+
 	return false;
 }
 
@@ -313,6 +511,17 @@ bool ULActionSlotWidget::CanAcceptPayload(
 		return false;
 	}
 
+	int32 QuickItemSlotIndex = INDEX_NONE;
+
+	if (TryConvertToQuickItemSlotIndex(QuickItemSlotIndex)
+		&& DragOperation->PayloadType == ELDragPayloadType::Item)
+	{
+		return DragOperation->ItemData
+			&& DragOperation->ItemData->IsConsumable()
+			&& (DragOperation->ItemData->RestoreHPAmount > 0.0f
+				|| DragOperation->ItemData->RestoreManaAmount > 0.0f);
+	}
+
 	switch (SlotType)
 	{
 	case ELActionSlotType::Skill:
@@ -322,11 +531,17 @@ bool ULActionSlotWidget::CanAcceptPayload(
 		return DragOperation->PayloadType == ELDragPayloadType::Ultimate;
 
 	case ELActionSlotType::Item:
-		return DragOperation->PayloadType == ELDragPayloadType::Item;
+		return DragOperation->PayloadType == ELDragPayloadType::Item
+			&& DragOperation->ItemData
+			&& DragOperation->ItemData->IsConsumable()
+			&& (DragOperation->ItemData->RestoreHPAmount > 0.0f
+				|| DragOperation->ItemData->RestoreManaAmount > 0.0f);
 
 	default:
-		return false;
+		break;
 	}
+
+	return false;
 }
 
 bool ULActionSlotWidget::TryConvertToPlayerSkillSlot(
@@ -376,6 +591,45 @@ bool ULActionSlotWidget::TryConvertToPlayerSkillSlot(
 	}
 }
 
+bool ULActionSlotWidget::TryConvertToQuickItemSlotIndex(
+	int32& OutQuickItemSlotIndex
+) const
+{
+	return TryConvertActionSlotKeyToQuickItemSlotIndex(
+		SlotKey,
+		OutQuickItemSlotIndex
+	);
+}
+
+bool ULActionSlotWidget::TryConvertActionSlotKeyToQuickItemSlotIndex(
+	ELActionSlotKey InSlotKey,
+	int32& OutQuickItemSlotIndex
+) const
+{
+	switch (InSlotKey)
+	{
+	case ELActionSlotKey::Item_1:
+		OutQuickItemSlotIndex = 0;
+		return true;
+
+	case ELActionSlotKey::Item_2:
+		OutQuickItemSlotIndex = 1;
+		return true;
+
+	case ELActionSlotKey::Item_3:
+		OutQuickItemSlotIndex = 2;
+		return true;
+
+	case ELActionSlotKey::Item_4:
+		OutQuickItemSlotIndex = 3;
+		return true;
+
+	default:
+		OutQuickItemSlotIndex = INDEX_NONE;
+		return false;
+	}
+}
+
 ALPlayerCharacter* ULActionSlotWidget::GetPlayerCharacter() const
 {
 	if (APlayerController* OwningPlayer = GetOwningPlayer())
@@ -392,13 +646,35 @@ ALPlayerCharacter* ULActionSlotWidget::GetPlayerCharacter() const
 	);
 }
 
+ULInventoryComponent* ULActionSlotWidget::GetInventoryComponent() const
+{
+	ALPlayerCharacter* PlayerCharacter = GetPlayerCharacter();
+
+	return PlayerCharacter
+		? PlayerCharacter->GetInventoryComponent()
+		: nullptr;
+}
+
 void ULActionSlotWidget::RefreshSlotFromPlayer()
 {
+	int32 QuickItemSlotIndex = INDEX_NONE;
+
+	if (TryConvertToQuickItemSlotIndex(QuickItemSlotIndex))
+	{
+		RefreshItemSlotFromInventory();
+		return;
+	}
+
 	if (SlotType != ELActionSlotType::Skill)
 	{
 		return;
 	}
 
+	RefreshSkillSlotFromPlayer();
+}
+
+void ULActionSlotWidget::RefreshSkillSlotFromPlayer()
+{
 	ELPlayerSkillSlot PlayerSkillSlot = ELPlayerSkillSlot::Q;
 
 	if (!TryConvertToPlayerSkillSlot(PlayerSkillSlot))
@@ -428,6 +704,71 @@ void ULActionSlotWidget::RefreshSlotFromPlayer()
 	UpdateCooldownUI(PlayerCharacter, CurrentSkillID);
 }
 
+void ULActionSlotWidget::RefreshItemSlotFromInventory()
+{
+	int32 QuickItemSlotIndex = INDEX_NONE;
+
+	if (!TryConvertToQuickItemSlotIndex(QuickItemSlotIndex))
+	{
+		return;
+	}
+
+	ULInventoryComponent* InventoryComponent =
+		GetInventoryComponent();
+
+	if (!InventoryComponent)
+	{
+		return;
+	}
+
+	ULItemDataAsset* ItemData =
+		InventoryComponent->GetQuickItemSlotData(QuickItemSlotIndex);
+	const int32 ItemCount =
+		InventoryComponent->GetQuickItemSlotQuantity(QuickItemSlotIndex);
+
+	if (CachedItemData != ItemData || CachedItemCount != ItemCount)
+	{
+		CachedItemData = ItemData;
+		CachedItemCount = ItemCount;
+
+		SetSlotIcon(
+			ItemData ? ItemData->IconTexture.Get() : nullptr
+		);
+	}
+
+	if (IMG_CooldownRadial)
+	{
+		IMG_CooldownRadial->SetVisibility(
+			ESlateVisibility::Collapsed
+		);
+	}
+
+	if (CooldownMaterial)
+	{
+		CooldownMaterial->SetScalarParameterValue(
+			TEXT("CooldownPercent"),
+			0.0f
+		);
+	}
+
+	if (TXT_Cooldown)
+	{
+		const bool bShowCount = ItemData && ItemCount > 0;
+
+		TXT_Cooldown->SetVisibility(
+			bShowCount
+				? ESlateVisibility::HitTestInvisible
+				: ESlateVisibility::Collapsed
+		);
+
+		TXT_Cooldown->SetText(
+			bShowCount
+				? FText::AsNumber(ItemCount)
+				: FText::GetEmpty()
+		);
+	}
+}
+
 void ULActionSlotWidget::SetSlotIcon(UTexture2D* IconTexture)
 {
 	if (!IMG_SlotIcon)
@@ -441,7 +782,8 @@ void ULActionSlotWidget::SetSlotIcon(UTexture2D* IconTexture)
 		return;
 	}
 
-	IMG_SlotIcon->SetBrushFromTexture(IconTexture, true);
+	IMG_SlotIcon->SetBrushFromTexture(IconTexture, false);
+	IMG_SlotIcon->SetDesiredSizeOverride(FVector2D(36.0f, 36.0f));
 	IMG_SlotIcon->SetRenderOpacity(1.0f);
 }
 
@@ -449,6 +791,15 @@ UTexture2D* ULActionSlotWidget::GetSkillIconTexture(
 	ELPlayerSkillID SkillID
 ) const
 {
+	if (ALPlayerCharacter* PlayerCharacter = GetPlayerCharacter())
+	{
+		if (UTexture2D* DataAssetIcon =
+			PlayerCharacter->GetSkillIconTexture(SkillID))
+		{
+			return DataAssetIcon;
+		}
+	}
+
 	switch (SkillID)
 	{
 	case ELPlayerSkillID::Meteor:
@@ -462,6 +813,9 @@ UTexture2D* ULActionSlotWidget::GetSkillIconTexture(
 
 	case ELPlayerSkillID::Wind:
 		return WindIconTexture;
+
+	case ELPlayerSkillID::FrostField:
+		return FrostFieldIconTexture ? FrostFieldIconTexture.Get() : WindIconTexture.Get();
 
 	case ELPlayerSkillID::None:
 	default:

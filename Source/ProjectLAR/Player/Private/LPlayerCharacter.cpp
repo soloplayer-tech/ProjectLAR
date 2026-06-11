@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "LPlayerCharacter.h"
+#include "Components/StaticMeshComponent.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -14,12 +15,37 @@
 #include "Engine/OverlapResult.h"
 #include "ProjectLAR/Combat/Public/LDamageable.h"
 #include "Kismet/GameplayStatics.h"
+#include "ProjectLAR/Item/Public/LInventoryComponent.h"
 #include "ProjectLAR/Save/Public/LPlayerSaveGames.h"
 #include "ProjectLAR/Skill/Public/LIceLanceActor.h"
+#include "Sound/SoundBase.h"
 
 ALPlayerCharacter::ALPlayerCharacter()
 {
 	bBlink = true;
+	InventoryComponent = CreateDefaultSubobject<ULInventoryComponent>(TEXT("InventoryComponent"));
+}
+
+ULInventoryComponent* ALPlayerCharacter::GetInventoryComponent() const
+{
+	return InventoryComponent;
+}
+
+UStaticMeshComponent* ALPlayerCharacter::GetWeaponVisualStaticMeshComponent() const
+{
+	return FindWeaponVisualStaticMeshComponent();
+}
+
+UNiagaraComponent* ALPlayerCharacter::GetWeaponVisualNiagaraComponent() const
+{
+	return FindWeaponVisualNiagaraComponent();
+}
+
+void ALPlayerCharacter::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+
+	RefreshEquippedWeaponVisual();
 }
 
 void ALPlayerCharacter::BeginPlay()
@@ -31,6 +57,8 @@ void ALPlayerCharacter::BeginPlay()
 	CurrentIdentityGauge = 0.f;
 
 	LoadEquippedSkillSlots();
+	ValidateSkillDataSetup();
+	RefreshEquippedWeaponVisual();
 }
 
 void ALPlayerCharacter::Tick(float DeltaSeconds)
@@ -38,6 +66,85 @@ void ALPlayerCharacter::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 	
 	RegenerateMana(DeltaSeconds);
+}
+
+void ALPlayerCharacter::RefreshEquippedWeaponVisual()
+{
+	UStaticMeshComponent* WeaponMeshComp =
+		FindWeaponVisualStaticMeshComponent();
+	UNiagaraComponent* WeaponNiagaraComp =
+		FindWeaponVisualNiagaraComponent();
+
+	FLInventorySlot EquippedWeaponSlot;
+	const bool bHasEquippedWeapon =
+		InventoryComponent
+		&& InventoryComponent->GetEquippedWeaponSlot(EquippedWeaponSlot)
+		&& EquippedWeaponSlot.ItemData;
+
+	if (WeaponMeshComp)
+	{
+		WeaponMeshComp->SetHiddenInGame(!bHasEquippedWeapon);
+		WeaponMeshComp->SetVisibility(bHasEquippedWeapon, true);
+	}
+
+	if (WeaponNiagaraComp)
+	{
+		WeaponNiagaraComp->SetHiddenInGame(!bHasEquippedWeapon);
+		WeaponNiagaraComp->SetVisibility(bHasEquippedWeapon, true);
+
+		if (bHasEquippedWeapon)
+		{
+			WeaponNiagaraComp->Activate(true);
+		}
+		else
+		{
+			WeaponNiagaraComp->Deactivate();
+		}
+	}
+}
+
+UStaticMeshComponent* ALPlayerCharacter::FindWeaponVisualStaticMeshComponent() const
+{
+	if (WeaponVisualStaticMeshComponentName.IsNone())
+	{
+		return nullptr;
+	}
+
+	TArray<UStaticMeshComponent*> StaticMeshComponents;
+	GetComponents<UStaticMeshComponent>(StaticMeshComponents);
+
+	for (UStaticMeshComponent* StaticMeshComponent : StaticMeshComponents)
+	{
+		if (StaticMeshComponent
+			&& StaticMeshComponent->GetFName() == WeaponVisualStaticMeshComponentName)
+		{
+			return StaticMeshComponent;
+		}
+	}
+
+	return nullptr;
+}
+
+UNiagaraComponent* ALPlayerCharacter::FindWeaponVisualNiagaraComponent() const
+{
+	if (WeaponVisualNiagaraComponentName.IsNone())
+	{
+		return nullptr;
+	}
+
+	TArray<UNiagaraComponent*> NiagaraComponents;
+	GetComponents<UNiagaraComponent>(NiagaraComponents);
+
+	for (UNiagaraComponent* NiagaraComponent : NiagaraComponents)
+	{
+		if (NiagaraComponent
+			&& NiagaraComponent->GetFName() == WeaponVisualNiagaraComponentName)
+		{
+			return NiagaraComponent;
+		}
+	}
+
+	return nullptr;
 }
 
 float ALPlayerCharacter::GetHPRatio() const
@@ -107,6 +214,16 @@ bool ALPlayerCharacter::SpendMana(float ManaCost)
 	return true;
 }
 
+void ALPlayerCharacter::RecoverHP(float Amount)
+{
+	if (Amount <= 0.0f)
+	{
+		return;
+	}
+
+	CurrentHP = FMath::Clamp(CurrentHP + Amount, 0.0f, MaxHP);
+}
+
 void ALPlayerCharacter::RecoverMana(float Amount)
 {
 	if (Amount <= 0.f)
@@ -153,74 +270,17 @@ void ALPlayerCharacter::AddIdentityGauge(float Amount)
 
 float ALPlayerCharacter::GetIdentityGainBySkill(ELPlayerSkillID SkillID) const
 {
-	switch (SkillID)
-	{
-	case ELPlayerSkillID::Meteor:
-		return MeteorIdentityGain;
-
-	case ELPlayerSkillID::IceLance:
-		return IceLanceIdentityGain;
-
-	case ELPlayerSkillID::Thunder:
-		return ThunderIdentityGain;
-
-	case ELPlayerSkillID::Wind:
-		return WindIdentityGain;
-
-	case ELPlayerSkillID::BasicAttack:
-		return BasicAttackIdentityGain;
-
-	default:
-		return 0.0f;
-	}
+	return GetSkillIdentityTuning(SkillID).BaseGain;
 }
 
 float ALPlayerCharacter::GetIdentityAdditionalGainBySkill(ELPlayerSkillID SkillID) const
 {
-	switch (SkillID)
-	{
-	case ELPlayerSkillID::Meteor:
-		return MeteorAdditionalIdentityGainPerTarget;
-
-	case ELPlayerSkillID::IceLance:
-		return IceLanceAdditionalIdentityGainPerTarget;
-
-	case ELPlayerSkillID::Thunder:
-		return ThunderAdditionalIdentityGainPerTarget;
-
-	case ELPlayerSkillID::Wind:
-		return WindAdditionalIdentityGainPerTarget;
-
-	case ELPlayerSkillID::BasicAttack:
-		return BasicAttackAdditionalIdentityGainPerTarget;
-
-	default:
-		return 0.0f;
-	}
+	return GetSkillIdentityTuning(SkillID).AdditionalGainPerTarget;
 }
 
 float ALPlayerCharacter::GetIdentityMaxGainBySkill(ELPlayerSkillID SkillID) const
 {
-	switch (SkillID)
-	{
-	case ELPlayerSkillID::Meteor:
-		return MeteorMaxIdentityGainPerCast;
-
-	case ELPlayerSkillID::IceLance:
-		return IceLanceMaxIdentityGainPerImpact;
-
-	case ELPlayerSkillID::Thunder:
-		return ThunderMaxIdentityGainPerStrike;
-
-	case ELPlayerSkillID::Wind:
-		return WindMaxIdentityGainPerCast;
-
-	case ELPlayerSkillID::BasicAttack:
-		return BasicAttackMaxIdentityGainPerAttack;
-
-	default:
-		return 0.0f;
-	}
+	return GetSkillIdentityTuning(SkillID).MaxGainPerEvent;
 }
 
 float ALPlayerCharacter::GetIdentityGainByHitCount(
@@ -343,6 +403,7 @@ void ALPlayerCharacter::ClearAllSkillCooldowns()
 	GetWorldTimerManager().ClearTimer(IceLanceCooldownTimerHandle);
 	GetWorldTimerManager().ClearTimer(ThunderCooldownTimerHandle);
 	GetWorldTimerManager().ClearTimer(WindCooldownTimerHandle);
+	GetWorldTimerManager().ClearTimer(FrostFieldCooldownTimerHandle);
 	GetWorldTimerManager().ClearTimer(MeteorRainCooldownTimerHandle);
 }
 
@@ -362,6 +423,17 @@ void ALPlayerCharacter::Dash(const FVector& DashDirection)
 	if (!CanDash())
 	{
 		return;
+	}
+
+	if (DashStartSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			this,
+			DashStartSound,
+			GetActorLocation(),
+			DashStartSoundVolume,
+			DashStartSoundPitch
+		);
 	}
 	
 	if (bBlink)
@@ -414,10 +486,23 @@ void ALPlayerCharacter::EndBlink()
 		);
 	}
 
+	if (DashEndSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			this,
+			DashEndSound,
+			GetActorLocation(),
+			DashEndSoundVolume,
+			DashEndSoundPitch
+		);
+	}
+
 	if (USkeletalMeshComponent* MeshComp = GetMesh())
 	{
 		MeshComp->SetHiddenInGame(false, true);
 	}
+
+	RefreshEquippedWeaponVisual();
 }
 
 void ALPlayerCharacter::StartIdentityBuffVFX()
@@ -458,42 +543,93 @@ void ALPlayerCharacter::StopIdentityBuffVFX()
 	ActiveIdentityBuffVFXComponent = nullptr;
 }
 
-void ALPlayerCharacter::BasicAttack(const FVector& TargetLocation)
+bool ALPlayerCharacter::PrepareActionDirection(
+	const FVector& TargetLocation,
+	FVector& OutDirection,
+	FRotator& OutRotation
+)
 {
-	FVector AttackDirection = TargetLocation - GetActorLocation();
-	AttackDirection.Z = 0.0f;
+	OutDirection = TargetLocation - GetActorLocation();
+	OutDirection.Z = 0.0f;
 
-	if (AttackDirection.IsNearlyZero())
+	if (OutDirection.IsNearlyZero())
 	{
-		return;
+		return false;
 	}
 
-	AttackDirection.Normalize();
-	
-	const FRotator AttackRotation = AttackDirection.Rotation();
+	OutDirection.Normalize();
+
+	OutRotation = OutDirection.Rotation();
 
 	SetActorRotation(
 		FRotator(
 			0.0f,
-			AttackRotation.Yaw,
+			OutRotation.Yaw,
 			0.0f
 		)
 	);
-	
+
 	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
 	{
 		MovementComp->StopMovementImmediately();
 	}
+
+	return true;
+}
+
+void ALPlayerCharacter::BasicAttack(const FVector& TargetLocation)
+{
+	const ULPlayerSkillDataAsset* BasicAttackDataAsset =
+		GetSkillDataAsset(ELPlayerSkillID::BasicAttack);
+
+	if (!BasicAttackDataAsset)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BasicAttack failed: DA_BasicAttack is not set."));
+		SetCurrentActionState(ELPlayerActionState::Idle);
+		return;
+	}
+
+	UAnimMontage* BasicAttackMontage = BasicAttackDataAsset->SkillMontage.Get();
+
+	if (!BasicAttackMontage)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BasicAttack failed: DA_BasicAttack SkillMontage is not set."));
+		SetCurrentActionState(ELPlayerActionState::Idle);
+		return;
+	}
+
+	FVector AttackDirection;
+	FRotator AttackRotation;
+
+	if (!PrepareActionDirection(TargetLocation, AttackDirection, AttackRotation))
+	{
+		return;
+	}
+
+	const float MontageDuration = PlayAnimMontage(BasicAttackMontage);
+
+	if (MontageDuration <= 0.0f)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BasicAttack failed: BasicAttackMontage could not be played."));
+		SetCurrentActionState(ELPlayerActionState::Idle);
+		return;
+	}
 	
 	SetCurrentActionState(ELPlayerActionState::BasicAttack);
+	PendingBasicAttackDirection = AttackDirection;
+	bBasicAttackHitTriggered = false;
+
+	const FLPlayerSkillCombatTuning CombatTuning =
+		GetSkillCombatTuning(ELPlayerSkillID::BasicAttack);
 	
 	FVector SpawnLocation =
 		GetActorLocation()
-		+ AttackDirection * BasicAttackForwardOffset;
+		+ AttackDirection * CombatTuning.ForwardOffset;
 
-	SpawnLocation.Z += BasicAttackHeightOffset;
+	SpawnLocation.Z += CombatTuning.HeightOffset;
 	
-	if (BasicAttackNiagara)
+	if (UNiagaraSystem* BasicAttackNiagara =
+		GetSkillMainNiagara(ELPlayerSkillID::BasicAttack))
 	{
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(),
@@ -503,52 +639,528 @@ void ALPlayerCharacter::BasicAttack(const FVector& TargetLocation)
 		);
 	}
 	
-	ApplyBasicAttackDamage(AttackDirection);
-	
 	GetWorldTimerManager().ClearTimer(BasicAttackTimerHandle);
 
 	GetWorldTimerManager().SetTimer(
 		BasicAttackTimerHandle,
 		this,
 		&ALPlayerCharacter::EndBasicAttack,
-		BasicAttackDuration,
+		MontageDuration,
 		false
 	);
 }
 
+void ALPlayerCharacter::TriggerBasicAttackHit()
+{
+	if (GetCurrentActionState() != ELPlayerActionState::BasicAttack)
+	{
+		return;
+	}
+
+	if (bBasicAttackHitTriggered)
+	{
+		return;
+	}
+
+	bBasicAttackHitTriggered = true;
+	ApplyBasicAttackDamage(PendingBasicAttackDirection);
+}
+
 void ALPlayerCharacter::EndBasicAttack()
 {
+	bBasicAttackHitTriggered = false;
 	SetCurrentActionState(ELPlayerActionState::Idle);
 }
 
 void ALPlayerCharacter::EndSkill()
 {
+	StopActiveSkillMontage();
 	SetCurrentActionState(ELPlayerActionState::Idle);
 }
 
 // =======================================================================================
-// Skill ManaCost - SkillID 기준
-float ALPlayerCharacter::GetSkillManaCost(ELPlayerSkillID SkillID) const
+// Skill Tuning - SkillID 기준
+FLPlayerSkillTuning ALPlayerCharacter::GetSkillTuning(ELPlayerSkillID SkillID) const
 {
+	if (const ULPlayerSkillDataAsset* SkillDataAsset = GetSkillDataAsset(SkillID))
+	{
+		return SkillDataAsset->Tuning;
+	}
+
+	return FLPlayerSkillTuning();
+}
+
+const ULPlayerSkillDataAsset* ALPlayerCharacter::GetSkillDataAsset(ELPlayerSkillID SkillID) const
+{
+	if (!SkillDatabase)
+	{
+		return nullptr;
+	}
+
+	return SkillDatabase->FindSkillDataAsset(SkillID);
+}
+
+void ALPlayerCharacter::PlaySkillStartSound(ELPlayerSkillID SkillID) const
+{
+	const ULPlayerSkillDataAsset* SkillDataAsset =
+		GetSkillDataAsset(SkillID);
+
+	if (!SkillDataAsset || !SkillDataAsset->AudioTuning.StartSound)
+	{
+		return;
+	}
+
+	UGameplayStatics::PlaySoundAtLocation(
+		this,
+		SkillDataAsset->AudioTuning.StartSound,
+		GetActorLocation(),
+		SkillDataAsset->AudioTuning.StartSoundVolume,
+		SkillDataAsset->AudioTuning.StartSoundPitch
+	);
+}
+
+void ALPlayerCharacter::PlaySkillCastStartSound(ELPlayerSkillID SkillID) const
+{
+	const ULPlayerSkillDataAsset* SkillDataAsset =
+		GetSkillDataAsset(SkillID);
+
+	if (!SkillDataAsset || !SkillDataAsset->AudioTuning.CastStartSound)
+	{
+		return;
+	}
+
+	UGameplayStatics::PlaySoundAtLocation(
+		this,
+		SkillDataAsset->AudioTuning.CastStartSound,
+		GetActorLocation(),
+		SkillDataAsset->AudioTuning.CastStartSoundVolume,
+		SkillDataAsset->AudioTuning.CastStartSoundPitch
+	);
+}
+
+void ALPlayerCharacter::PlaySkillImpactSound(
+	ELPlayerSkillID SkillID,
+	const FVector& Location
+) const
+{
+	const ULPlayerSkillDataAsset* SkillDataAsset =
+		GetSkillDataAsset(SkillID);
+
+	if (!SkillDataAsset || !SkillDataAsset->AudioTuning.ImpactSound)
+	{
+		return;
+	}
+
+	UGameplayStatics::PlaySoundAtLocation(
+		this,
+		SkillDataAsset->AudioTuning.ImpactSound,
+		Location,
+		SkillDataAsset->AudioTuning.ImpactSoundVolume,
+		SkillDataAsset->AudioTuning.ImpactSoundPitch
+	);
+}
+
+FLPlayerSkillCombatTuning ALPlayerCharacter::GetSkillCombatTuning(
+	ELPlayerSkillID SkillID
+) const
+{
+	if (const ULPlayerSkillDataAsset* SkillDataAsset = GetSkillDataAsset(SkillID))
+	{
+		if (SkillDataAsset->CombatTuning.bOverrideCombatValues)
+		{
+			return SkillDataAsset->CombatTuning;
+		}
+	}
+
+	return FLPlayerSkillCombatTuning();
+}
+
+FLPlayerSkillIdentityTuning ALPlayerCharacter::GetSkillIdentityTuning(
+	ELPlayerSkillID SkillID
+) const
+{
+	if (const ULPlayerSkillDataAsset* SkillDataAsset = GetSkillDataAsset(SkillID))
+	{
+		if (SkillDataAsset->IdentityTuning.bOverrideIdentityGain)
+		{
+			return SkillDataAsset->IdentityTuning;
+		}
+	}
+
+	return FLPlayerSkillIdentityTuning();
+}
+
+FLPlayerIceLanceTuning ALPlayerCharacter::GetSkillIceLanceTuning() const
+{
+	if (const ULPlayerSkillDataAsset* SkillDataAsset =
+		GetSkillDataAsset(ELPlayerSkillID::IceLance))
+	{
+		if (SkillDataAsset->IceLanceTuning.bOverrideIceLanceValues)
+		{
+			return SkillDataAsset->IceLanceTuning;
+		}
+	}
+
+	return FLPlayerIceLanceTuning();
+}
+
+UClass* ALPlayerCharacter::GetSkillActorClass(ELPlayerSkillID SkillID) const
+{
+	if (const ULPlayerSkillDataAsset* SkillDataAsset = GetSkillDataAsset(SkillID))
+	{
+		if (SkillDataAsset->SkillActorClass)
+		{
+			return SkillDataAsset->SkillActorClass.Get();
+		}
+	}
+
 	switch (SkillID)
 	{
-	case ELPlayerSkillID::Meteor:
-		return MeteorManaCost;
-
-	case ELPlayerSkillID::IceLance:
-		return IceLanceManaCost;
-
-	case ELPlayerSkillID::Thunder:
-		return ThunderManaCost;
-
+	case ELPlayerSkillID::FrostField:
 	case ELPlayerSkillID::Wind:
-		return WindManaCost;
+	case ELPlayerSkillID::MeteorRain:
+	case ELPlayerSkillID::BasicAttack:
+	case ELPlayerSkillID::None:
+	default:
+		return nullptr;
+	}
+}
 
+UNiagaraSystem* ALPlayerCharacter::GetSkillMainNiagara(
+	ELPlayerSkillID SkillID
+) const
+{
+	if (const ULPlayerSkillDataAsset* SkillDataAsset = GetSkillDataAsset(SkillID))
+	{
+		if (SkillDataAsset->VisualTuning.MainNiagara)
+		{
+			return SkillDataAsset->VisualTuning.MainNiagara.Get();
+		}
+	}
+
+	switch (SkillID)
+	{
+	case ELPlayerSkillID::FrostField:
+	case ELPlayerSkillID::Meteor:
+	case ELPlayerSkillID::Thunder:
+	case ELPlayerSkillID::MeteorRain:
+	case ELPlayerSkillID::BasicAttack:
+	case ELPlayerSkillID::None:
+	default:
+		return nullptr;
+	}
+}
+
+UNiagaraSystem* ALPlayerCharacter::GetSkillCastStartNiagara(
+	ELPlayerSkillID SkillID
+) const
+{
+	if (const ULPlayerSkillDataAsset* SkillDataAsset = GetSkillDataAsset(SkillID))
+	{
+		if (SkillDataAsset->VisualTuning.CastStartNiagara)
+		{
+			return SkillDataAsset->VisualTuning.CastStartNiagara.Get();
+		}
+	}
+
+	switch (SkillID)
+	{
+	case ELPlayerSkillID::IceLance:
+	case ELPlayerSkillID::Wind:
+	case ELPlayerSkillID::FrostField:
+	case ELPlayerSkillID::MeteorRain:
+	case ELPlayerSkillID::BasicAttack:
+	case ELPlayerSkillID::None:
+	default:
+		return nullptr;
+	}
+}
+
+UNiagaraSystem* ALPlayerCharacter::GetSkillWarningNiagara(
+	ELPlayerSkillID SkillID
+) const
+{
+	if (const ULPlayerSkillDataAsset* SkillDataAsset = GetSkillDataAsset(SkillID))
+	{
+		if (SkillDataAsset->VisualTuning.WarningNiagara)
+		{
+			return SkillDataAsset->VisualTuning.WarningNiagara.Get();
+		}
+	}
+
+	return nullptr;
+}
+
+UNiagaraSystem* ALPlayerCharacter::GetSkillImpactNiagara(
+	ELPlayerSkillID SkillID
+) const
+{
+	if (const ULPlayerSkillDataAsset* SkillDataAsset = GetSkillDataAsset(SkillID))
+	{
+		if (SkillDataAsset->VisualTuning.ImpactNiagara)
+		{
+			return SkillDataAsset->VisualTuning.ImpactNiagara.Get();
+		}
+	}
+
+	return nullptr;
+}
+
+float ALPlayerCharacter::GetSkillCastStartEffectHeightOffset(
+	ELPlayerSkillID SkillID
+) const
+{
+	if (const ULPlayerSkillDataAsset* SkillDataAsset = GetSkillDataAsset(SkillID))
+	{
+		if (SkillDataAsset->VisualTuning.CastStartNiagara)
+		{
+			return SkillDataAsset->VisualTuning.CastStartHeightOffset;
+		}
+	}
+
+	switch (SkillID)
+	{
+	case ELPlayerSkillID::IceLance:
+	case ELPlayerSkillID::Wind:
+	case ELPlayerSkillID::FrostField:
+	case ELPlayerSkillID::MeteorRain:
 	case ELPlayerSkillID::BasicAttack:
 	case ELPlayerSkillID::None:
 	default:
 		return 0.0f;
 	}
+}
+
+void ALPlayerCharacter::ValidateSkillDataSetup() const
+{
+	if (!SkillDatabase)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillData Validation: SkillDatabase is not set."));
+		return;
+	}
+
+	const TArray<ELPlayerSkillID> RequiredSkillIDs =
+	{
+		ELPlayerSkillID::BasicAttack,
+		ELPlayerSkillID::Meteor,
+		ELPlayerSkillID::IceLance,
+		ELPlayerSkillID::Thunder,
+		ELPlayerSkillID::Wind,
+		ELPlayerSkillID::FrostField
+	};
+
+	bool bAllValid = true;
+
+	for (const ELPlayerSkillID SkillID : RequiredSkillIDs)
+	{
+		bAllValid &= ValidateSkillDataAsset(SkillID, GetSkillDataAsset(SkillID));
+	}
+
+	if (bAllValid)
+	{
+		UE_LOG(LogTemp, Log, TEXT("SkillData Validation: all required player skills look valid."));
+	}
+}
+
+bool ALPlayerCharacter::ValidateSkillDataAsset(
+	ELPlayerSkillID SkillID,
+	const ULPlayerSkillDataAsset* SkillDataAsset
+) const
+{
+	bool bValid = true;
+
+	const FString SkillName = UEnum::GetValueAsString(SkillID);
+
+	const auto Warn =
+		[&bValid, &SkillName](const FString& Message)
+		{
+			bValid = false;
+			UE_LOG(
+				LogTemp,
+				Warning,
+				TEXT("SkillData Validation: %s / %s"),
+				*SkillName,
+				*Message
+			);
+		};
+
+	if (!SkillDataAsset)
+	{
+		Warn(TEXT("DataAsset is missing from SkillDatabase."));
+		return false;
+	}
+
+	const FLPlayerSkillTuning& Tuning = SkillDataAsset->Tuning;
+	const FLPlayerSkillCombatTuning& CombatTuning = SkillDataAsset->CombatTuning;
+	const FLPlayerSkillIdentityTuning& IdentityTuning = SkillDataAsset->IdentityTuning;
+
+	if (Tuning.CastDuration > 0.0f && !Tuning.bRequiresCasting)
+	{
+		Warn(TEXT("CastDuration is set, but bRequiresCasting is false."));
+	}
+
+	if (Tuning.bRequiresCasting && Tuning.CastDuration <= 0.0f)
+	{
+		Warn(TEXT("bRequiresCasting is true, but CastDuration is not positive."));
+	}
+
+	if (!CombatTuning.bOverrideCombatValues)
+	{
+		Warn(TEXT("CombatTuning override is off; combat values will be zero."));
+	}
+
+	if (!IdentityTuning.bOverrideIdentityGain)
+	{
+		Warn(TEXT("IdentityTuning override is off; identity gain will be zero."));
+	}
+
+	const auto ValidateActorClass =
+		[&Warn, SkillDataAsset](const UClass* RequiredClass)
+		{
+			UClass* ActorClass = SkillDataAsset->SkillActorClass.Get();
+
+			if (!ActorClass)
+			{
+				Warn(TEXT("SkillActorClass is not set."));
+				return;
+			}
+
+			if (!ActorClass->IsChildOf(RequiredClass))
+			{
+				Warn(FString::Printf(
+					TEXT("SkillActorClass must inherit from %s."),
+					*RequiredClass->GetName()
+				));
+			}
+		};
+
+	const auto ValidateSphereDamage =
+		[&Warn, &CombatTuning]()
+		{
+			if (CombatTuning.Damage <= 0.0f)
+			{
+				Warn(TEXT("Damage must be positive."));
+			}
+
+			if (CombatTuning.Radius <= 0.0f)
+			{
+				Warn(TEXT("Radius must be positive."));
+			}
+		};
+
+	const auto ValidateBoxDamage =
+		[&Warn, &CombatTuning]()
+		{
+			if (CombatTuning.Damage <= 0.0f)
+			{
+				Warn(TEXT("Damage must be positive."));
+			}
+
+			if (CombatTuning.BoxHalfExtent.IsNearlyZero())
+			{
+				Warn(TEXT("BoxHalfExtent is zero."));
+			}
+		};
+
+	switch (SkillID)
+	{
+	case ELPlayerSkillID::BasicAttack:
+		if (!SkillDataAsset->SkillMontage)
+		{
+			Warn(TEXT("SkillMontage is required for BasicAttack."));
+		}
+
+		ValidateBoxDamage();
+		break;
+
+	case ELPlayerSkillID::Meteor:
+		ValidateActorClass(ALMeteorActor::StaticClass());
+		ValidateSphereDamage();
+
+		if (CombatTuning.Duration <= 0.0f)
+		{
+			Warn(TEXT("Duration must be positive for Meteor fall time."));
+		}
+		break;
+
+	case ELPlayerSkillID::IceLance:
+		ValidateActorClass(ALIceLanceActor::StaticClass());
+		ValidateSphereDamage();
+
+		if (!SkillDataAsset->IceLanceTuning.bOverrideIceLanceValues)
+		{
+			Warn(TEXT("IceLanceTuning override is off."));
+		}
+
+		if (SkillDataAsset->IceLanceTuning.Count <= 0)
+		{
+			Warn(TEXT("IceLance Count must be positive."));
+		}
+
+		if (SkillDataAsset->IceLanceTuning.TravelDuration <= 0.0f)
+		{
+			Warn(TEXT("IceLance TravelDuration must be positive."));
+		}
+		break;
+
+	case ELPlayerSkillID::Thunder:
+		ValidateActorClass(ALThunderActor::StaticClass());
+		ValidateSphereDamage();
+
+		if (CombatTuning.Count <= 0)
+		{
+			Warn(TEXT("Count must be positive for Thunder strikes."));
+		}
+
+		if (CombatTuning.SpawnRadius <= 0.0f)
+		{
+			Warn(TEXT("SpawnRadius must be positive for Thunder."));
+		}
+
+		if (CombatTuning.TickInterval <= 0.0f)
+		{
+			Warn(TEXT("TickInterval must be positive for Thunder."));
+		}
+		break;
+
+	case ELPlayerSkillID::Wind:
+		ValidateBoxDamage();
+		break;
+
+	case ELPlayerSkillID::FrostField:
+		ValidateSphereDamage();
+
+		if (CombatTuning.Duration <= 0.0f)
+		{
+			Warn(TEXT("Duration must be positive for FrostField."));
+		}
+
+		if (CombatTuning.TickInterval <= 0.0f)
+		{
+			Warn(TEXT("TickInterval must be positive for FrostField."));
+		}
+
+		if (UClass* ActorClass = SkillDataAsset->SkillActorClass.Get())
+		{
+			if (!ActorClass->IsChildOf(ALGroundAreaSkillActor::StaticClass()))
+			{
+				Warn(TEXT("FrostField SkillActorClass must inherit from ALGroundAreaSkillActor."));
+			}
+		}
+		break;
+
+	case ELPlayerSkillID::MeteorRain:
+	case ELPlayerSkillID::None:
+	default:
+		break;
+	}
+
+	return bValid;
+}
+
+float ALPlayerCharacter::GetSkillManaCost(ELPlayerSkillID SkillID) const
+{
+	return GetSkillTuning(SkillID).ManaCost;
 }
 // =======================================================================================
 // Skill Cooldown - SkillID 기준
@@ -578,27 +1190,15 @@ bool ALPlayerCharacter::IsSkillIDOnCooldown(ELPlayerSkillID SkillID) const
 		return false;
 	}
 
-	switch (SkillID)
+	const FTimerHandle* CooldownTimerHandle =
+		GetSkillCooldownTimerHandle(SkillID);
+
+	if (!CooldownTimerHandle)
 	{
-	case ELPlayerSkillID::Meteor:
-		return GetWorldTimerManager().IsTimerActive(MeteorCooldownTimerHandle);
-
-	case ELPlayerSkillID::IceLance:
-		return GetWorldTimerManager().IsTimerActive(IceLanceCooldownTimerHandle);
-
-	case ELPlayerSkillID::Thunder:
-		return GetWorldTimerManager().IsTimerActive(ThunderCooldownTimerHandle);
-
-	case ELPlayerSkillID::Wind:
-		return GetWorldTimerManager().IsTimerActive(WindCooldownTimerHandle);
-
-	case ELPlayerSkillID::MeteorRain:
-		return GetWorldTimerManager().IsTimerActive(MeteorRainCooldownTimerHandle);
-
-	case ELPlayerSkillID::None:
-	default:
 		return false;
 	}
+
+	return GetWorldTimerManager().IsTimerActive(*CooldownTimerHandle);
 }
 
 float ALPlayerCharacter::GetSkillIDCooldownRemaining(ELPlayerSkillID SkillID) const
@@ -608,37 +1208,23 @@ float ALPlayerCharacter::GetSkillIDCooldownRemaining(ELPlayerSkillID SkillID) co
 		return 0.0f;
 	}
 
-	switch (SkillID)
+	const FTimerHandle* CooldownTimerHandle =
+		GetSkillCooldownTimerHandle(SkillID);
+
+	if (!CooldownTimerHandle)
 	{
-	case ELPlayerSkillID::Meteor:
-		return GetWorldTimerManager().IsTimerActive(MeteorCooldownTimerHandle)
-			? FMath::Max(0.0f, GetWorldTimerManager().GetTimerRemaining(MeteorCooldownTimerHandle))
-			: 0.0f;
-
-	case ELPlayerSkillID::IceLance:
-		return GetWorldTimerManager().IsTimerActive(IceLanceCooldownTimerHandle)
-			? FMath::Max(0.0f, GetWorldTimerManager().GetTimerRemaining(IceLanceCooldownTimerHandle))
-			: 0.0f;
-
-	case ELPlayerSkillID::Thunder:
-		return GetWorldTimerManager().IsTimerActive(ThunderCooldownTimerHandle)
-			? FMath::Max(0.0f, GetWorldTimerManager().GetTimerRemaining(ThunderCooldownTimerHandle))
-			: 0.0f;
-
-	case ELPlayerSkillID::Wind:
-		return GetWorldTimerManager().IsTimerActive(WindCooldownTimerHandle)
-			? FMath::Max(0.0f, GetWorldTimerManager().GetTimerRemaining(WindCooldownTimerHandle))
-			: 0.0f;
-
-	case ELPlayerSkillID::MeteorRain:
-		return GetWorldTimerManager().IsTimerActive(MeteorRainCooldownTimerHandle)
-			? FMath::Max(0.0f, GetWorldTimerManager().GetTimerRemaining(MeteorRainCooldownTimerHandle))
-			: 0.0f;
-
-	case ELPlayerSkillID::None:
-	default:
 		return 0.0f;
 	}
+
+	if (!GetWorldTimerManager().IsTimerActive(*CooldownTimerHandle))
+	{
+		return 0.0f;
+	}
+
+	return FMath::Max(
+		0.0f,
+		GetWorldTimerManager().GetTimerRemaining(*CooldownTimerHandle)
+	);
 }
 
 float ALPlayerCharacter::GetSkillIDCooldownRatio(ELPlayerSkillID SkillID) const
@@ -659,26 +1245,67 @@ float ALPlayerCharacter::GetSkillIDCooldownRatio(ELPlayerSkillID SkillID) const
 
 float ALPlayerCharacter::GetSkillCooldownDuration(ELPlayerSkillID SkillID) const
 {
+	return GetSkillTuning(SkillID).CooldownDuration;
+}
+
+float ALPlayerCharacter::GetSkillLockDuration(ELPlayerSkillID SkillID) const
+{
+	return GetSkillTuning(SkillID).SkillLockDuration;
+}
+
+FTimerHandle* ALPlayerCharacter::GetSkillCooldownTimerHandle(ELPlayerSkillID SkillID)
+{
 	switch (SkillID)
 	{
 	case ELPlayerSkillID::Meteor:
-		return MeteorCooldown;
+		return &MeteorCooldownTimerHandle;
 
 	case ELPlayerSkillID::IceLance:
-		return IceLanceCooldown;
+		return &IceLanceCooldownTimerHandle;
 
 	case ELPlayerSkillID::Thunder:
-		return ThunderCooldown;
+		return &ThunderCooldownTimerHandle;
 
 	case ELPlayerSkillID::Wind:
-		return WindCooldown;
+		return &WindCooldownTimerHandle;
+
+	case ELPlayerSkillID::FrostField:
+		return &FrostFieldCooldownTimerHandle;
 
 	case ELPlayerSkillID::MeteorRain:
-		return MeteorRainCooldown;
+		return &MeteorRainCooldownTimerHandle;
 
 	case ELPlayerSkillID::None:
 	default:
-		return 0.0f;
+		return nullptr;
+	}
+}
+
+const FTimerHandle* ALPlayerCharacter::GetSkillCooldownTimerHandle(ELPlayerSkillID SkillID) const
+{
+	switch (SkillID)
+	{
+	case ELPlayerSkillID::Meteor:
+		return &MeteorCooldownTimerHandle;
+
+	case ELPlayerSkillID::IceLance:
+		return &IceLanceCooldownTimerHandle;
+
+	case ELPlayerSkillID::Thunder:
+		return &ThunderCooldownTimerHandle;
+
+	case ELPlayerSkillID::Wind:
+		return &WindCooldownTimerHandle;
+
+	case ELPlayerSkillID::FrostField:
+		return &FrostFieldCooldownTimerHandle;
+
+	case ELPlayerSkillID::MeteorRain:
+		return &MeteorRainCooldownTimerHandle;
+
+	case ELPlayerSkillID::None:
+	default:
+		return nullptr;
 	}
 }
 
@@ -696,67 +1323,28 @@ void ALPlayerCharacter::StartSkillCooldown(ELPlayerSkillID SkillID)
 		return;
 	}
 
-	switch (SkillID)
+	FTimerHandle* CooldownTimerHandle =
+		GetSkillCooldownTimerHandle(SkillID);
+
+	if (!CooldownTimerHandle)
 	{
-	case ELPlayerSkillID::Meteor:
-		GetWorldTimerManager().ClearTimer(MeteorCooldownTimerHandle);
-		GetWorldTimerManager().SetTimer(
-			MeteorCooldownTimerHandle,
-			this,
-			&ALPlayerCharacter::ResetMeteorCooldown,
-			CooldownDuration,
-			false
-		);
-		break;
-
-	case ELPlayerSkillID::IceLance:
-		GetWorldTimerManager().ClearTimer(IceLanceCooldownTimerHandle);
-		GetWorldTimerManager().SetTimer(
-			IceLanceCooldownTimerHandle,
-			this,
-			&ALPlayerCharacter::ResetIceLanceCooldown,
-			CooldownDuration,
-			false
-		);
-		break;
-
-	case ELPlayerSkillID::Thunder:
-		GetWorldTimerManager().ClearTimer(ThunderCooldownTimerHandle);
-		GetWorldTimerManager().SetTimer(
-			ThunderCooldownTimerHandle,
-			this,
-			&ALPlayerCharacter::ResetThunderCooldown,
-			CooldownDuration,
-			false
-		);
-		break;
-
-	case ELPlayerSkillID::Wind:
-		GetWorldTimerManager().ClearTimer(WindCooldownTimerHandle);
-		GetWorldTimerManager().SetTimer(
-			WindCooldownTimerHandle,
-			this,
-			&ALPlayerCharacter::ResetWindCooldown,
-			CooldownDuration,
-			false
-		);
-		break;
-
-	case ELPlayerSkillID::MeteorRain:
-		GetWorldTimerManager().ClearTimer(MeteorRainCooldownTimerHandle);
-		GetWorldTimerManager().SetTimer(
-			MeteorRainCooldownTimerHandle,
-			this,
-			&ALPlayerCharacter::ResetMeteorRainCooldown,
-			CooldownDuration,
-			false
-		);
-		break;
-
-	case ELPlayerSkillID::None:
-	default:
-		break;
+		return;
 	}
+
+	FTimerDelegate CooldownFinishedDelegate;
+	CooldownFinishedDelegate.BindUObject(
+		this,
+		&ALPlayerCharacter::ResetSkillCooldown,
+		SkillID
+	);
+
+	GetWorldTimerManager().ClearTimer(*CooldownTimerHandle);
+	GetWorldTimerManager().SetTimer(
+		*CooldownTimerHandle,
+		CooldownFinishedDelegate,
+		CooldownDuration,
+		false
+	);
 
 	UE_LOG(
 		LogTemp,
@@ -767,23 +1355,7 @@ void ALPlayerCharacter::StartSkillCooldown(ELPlayerSkillID SkillID)
 	);
 }
 
-void ALPlayerCharacter::ResetMeteorCooldown()
-{
-}
-
-void ALPlayerCharacter::ResetIceLanceCooldown()
-{
-}
-
-void ALPlayerCharacter::ResetThunderCooldown()
-{
-}
-
-void ALPlayerCharacter::ResetWindCooldown()
-{
-}
-
-void ALPlayerCharacter::ResetMeteorRainCooldown()
+void ALPlayerCharacter::ResetSkillCooldown(ELPlayerSkillID SkillID)
 {
 }
 
@@ -939,27 +1511,46 @@ bool ALPlayerCharacter::ExecuteSkillByID(
 	ELPlayerSkillID SkillID,
 	const FVector& TargetLocation)
 {
+	bool bSkillSucceeded = false;
+
 	switch (SkillID)
 	{
 	case ELPlayerSkillID::Meteor:
-		return UseQSkill(TargetLocation);
+		bSkillSucceeded = UseMeteorSkill(TargetLocation);
+		break;
 		
 	case ELPlayerSkillID::IceLance:
-		return UseWSkill(TargetLocation);
+		bSkillSucceeded = UseIceLanceSkill(TargetLocation);
+		break;
 		
 	case ELPlayerSkillID::Thunder:
-		return UseESkill(TargetLocation);
+		bSkillSucceeded = UseThunderSkill(TargetLocation);
+		break;
 		
 	case ELPlayerSkillID::Wind:
-		return UseRSkill(TargetLocation);
+		bSkillSucceeded = UseWindSkill(TargetLocation);
+		break;
+
+	case ELPlayerSkillID::FrostField:
+		bSkillSucceeded = UseFrostFieldSkill(TargetLocation);
+		break;
 		
 	case ELPlayerSkillID::MeteorRain:
-		return UseVSkill(TargetLocation);
+		bSkillSucceeded = UseMeteorRainSkill(TargetLocation);
+		break;
 
 	case ELPlayerSkillID::None:
 	default:
-		return false;
+		break;
 	}
+
+	if (bSkillSucceeded && (!DoesSkillNeedCasting(SkillID) || GetSkillCastDuration(SkillID) <= 0.0f))
+	{
+		PlaySkillStartSound(SkillID);
+		PlaySkillMontage(SkillID);
+	}
+
+	return bSkillSucceeded;
 }
 
 // =======================================================================================
@@ -977,34 +1568,12 @@ ELPlayerSkillID ALPlayerCharacter::GetCastingSkillID() const
 
 bool ALPlayerCharacter::DoesSkillNeedCasting(ELPlayerSkillID SkillID) const
 {
-	switch (SkillID)
-	{
-	case ELPlayerSkillID::Meteor:
-	case ELPlayerSkillID::Thunder:
-		return true;
-
-	default:
-		return false;
-	}
+	return GetSkillTuning(SkillID).bRequiresCasting;
 }
 
 float ALPlayerCharacter::GetSkillCastDuration(ELPlayerSkillID SkillID) const
 {
-	float BaseDuration = 0.0f;
-
-	switch (SkillID)
-	{
-	case ELPlayerSkillID::Meteor:
-		BaseDuration = MeteorCastDuration;
-		break;
-
-	case ELPlayerSkillID::Thunder:
-		BaseDuration = ThunderCastDuration;
-		break;
-
-	default:
-		return 0.0f;
-	}
+	const float BaseDuration = GetSkillTuning(SkillID).CastDuration;
 
 	if (bIdentityActive)
 	{
@@ -1012,6 +1581,93 @@ float ALPlayerCharacter::GetSkillCastDuration(ELPlayerSkillID SkillID) const
 	}
 
 	return BaseDuration;
+}
+
+void ALPlayerCharacter::StartSkillLock(ELPlayerSkillID SkillID)
+{
+	SetCurrentActionState(ELPlayerActionState::Skill);
+
+	GetWorldTimerManager().ClearTimer(SkillTimerHandle);
+
+	const float SkillLockDuration = GetSkillLockDuration(SkillID);
+
+	if (SkillLockDuration <= 0.0f)
+	{
+		EndSkill();
+		return;
+	}
+
+	GetWorldTimerManager().SetTimer(
+		SkillTimerHandle,
+		this,
+		&ALPlayerCharacter::EndSkill,
+		SkillLockDuration,
+		false
+	);
+}
+
+void ALPlayerCharacter::PlaySkillMontage(ELPlayerSkillID SkillID)
+{
+	StopActiveSkillMontage();
+
+	const ULPlayerSkillDataAsset* SkillDataAsset = GetSkillDataAsset(SkillID);
+
+	if (!SkillDataAsset || !SkillDataAsset->SkillMontage)
+	{
+		return;
+	}
+
+	const float MontageDuration = PlayAnimMontage(SkillDataAsset->SkillMontage);
+
+	if (MontageDuration <= 0.0f)
+	{
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("Skill montage could not be played: %s"),
+			*UEnum::GetValueAsString(SkillID)
+		);
+
+		return;
+	}
+
+	ActiveSkillMontage = SkillDataAsset->SkillMontage;
+}
+
+void ALPlayerCharacter::StopActiveSkillMontage()
+{
+	if (!ActiveSkillMontage)
+	{
+		return;
+	}
+
+	StopAnimMontage(ActiveSkillMontage);
+	ActiveSkillMontage = nullptr;
+}
+
+bool ALPlayerCharacter::CommitSkillCostAndCooldown(ELPlayerSkillID SkillID)
+{
+	const float ManaCost = GetSkillManaCost(SkillID);
+
+	if (!CanSpendMana(ManaCost))
+	{
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("Skill Commit Failed: Not Enough Mana / %s"),
+			*UEnum::GetValueAsString(SkillID)
+		);
+
+		return false;
+	}
+
+	if (!SpendMana(ManaCost))
+	{
+		return false;
+	}
+
+	StartSkillCooldown(SkillID);
+	return true;
 }
 
 // ======================================================================================
@@ -1022,35 +1678,34 @@ void ALPlayerCharacter::SpawnCastStartEffect(
 	const FVector& TargetLocation
 )
 {
-	UNiagaraSystem* CastStartEffect = nullptr;
+	UNiagaraSystem* CastStartEffect = GetSkillCastStartNiagara(SkillID);
 	FVector SpawnLocation = FVector::ZeroVector;
 	FRotator SpawnRotation = FRotator::ZeroRotator;
+	const float HeightOffset = GetSkillCastStartEffectHeightOffset(SkillID);
+
+	if (!CastStartEffect)
+	{
+		return;
+	}
 
 	switch (SkillID)
 	{
 	case ELPlayerSkillID::Meteor:
 		// 메테오 캐스팅 이펙트는 플레이어 발밑
-		CastStartEffect = MeteorCastStartEffect;
 		SpawnLocation = GetActorLocation();
-		SpawnLocation.Z += MeteorCastEffectHeightOffset;
+		SpawnLocation.Z += HeightOffset;
 		SpawnRotation = GetActorRotation();
 		break;
 
 	case ELPlayerSkillID::Thunder:
 		// 썬더 캐스팅 이펙트는 마우스 위치
-		CastStartEffect = ThunderCastStartEffect;
 		SpawnLocation = TargetLocation;
-		SpawnLocation.Z += ThunderCastEffectHeightOffset;
+		SpawnLocation.Z += HeightOffset;
 		SpawnRotation = FRotator::ZeroRotator;
 		break;
 
 	default:
 		break;
-	}
-
-	if (!CastStartEffect)
-	{
-		return;
 	}
 
 	UNiagaraFunctionLibrary::SpawnSystemAtLocation(
@@ -1071,12 +1726,20 @@ void ALPlayerCharacter::StartSkillCast(
 
 	if (CastDuration <= 0.0f)
 	{
+		const float ManaCost = GetSkillManaCost(SkillID);
+
+		if (!CanSpendMana(ManaCost))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Not Enough Mana"));
+			return;
+		}
+
 		const bool bSkillSucceeded =
 			ExecuteSkillByID(SkillID, TargetLocation);
 
 		if (bSkillSucceeded)
 		{
-			StartSkillCooldown(SkillID);
+			CommitSkillCostAndCooldown(SkillID);
 		}
 
 		return;
@@ -1117,6 +1780,8 @@ void ALPlayerCharacter::StartSkillCast(
 
 	SetCurrentActionState(ELPlayerActionState::Casting);
 
+	PlaySkillMontage(SkillID);
+	PlaySkillCastStartSound(SkillID);
 	SpawnCastStartEffect(SkillID, TargetLocation);
 	
 	GetWorldTimerManager().ClearTimer(CastTimerHandle);
@@ -1168,6 +1833,7 @@ void ALPlayerCharacter::FinishSkillCast()
 			*UEnum::GetValueAsString(FinishedSkillID)
 		);
 
+		StopActiveSkillMontage();
 		return;
 	}
 
@@ -1176,8 +1842,12 @@ void ALPlayerCharacter::FinishSkillCast()
 
 	if (bSkillSucceeded)
 	{
-		SpendMana(ManaCost);
-		StartSkillCooldown(FinishedSkillID);
+		PlaySkillStartSound(FinishedSkillID);
+		CommitSkillCostAndCooldown(FinishedSkillID);
+	}
+	else
+	{
+		StopActiveSkillMontage();
 	}
 
 	UE_LOG(
@@ -1200,6 +1870,7 @@ void ALPlayerCharacter::CancelSkillCast()
 	CurrentCastDuration = 0.0f;
 
 	GetWorldTimerManager().ClearTimer(CastTimerHandle);
+	StopActiveSkillMontage();
 
 	if (GetCurrentActionState() == ELPlayerActionState::Casting)
 	{
@@ -1225,25 +1896,19 @@ void ALPlayerCharacter::ApplyBasicAttackDamage(const FVector& AttackDirection)
 	}
 
 	const FRotator DamageRotation = NormalizedDirection.Rotation();
+	const FLPlayerSkillCombatTuning CombatTuning =
+		GetSkillCombatTuning(ELPlayerSkillID::BasicAttack);
+
+	if (CombatTuning.Damage <= 0.0f || CombatTuning.BoxHalfExtent.IsNearlyZero())
+	{
+		return;
+	}
 
 	FVector DamageCenter =
 		GetActorLocation()
-		+ NormalizedDirection * BasicAttackDamageCenterOffset;
+		+ NormalizedDirection * CombatTuning.BoxCenterOffset;
 
-	DamageCenter.Z += BasicAttackDamageHeightOffset;
-
-	/*if (bDrawBasicAttackDamageDebug)
-	{
-		DrawDebugBox(
-			World,
-			DamageCenter,
-			BasicAttackDamageBoxHalfExtent,
-			DamageRotation.Quaternion(),
-			FColor::Yellow,
-			false,
-			1.0f
-		);
-	}*/
+	DamageCenter.Z += CombatTuning.BoxHeightOffset;
 
 	TArray<FOverlapResult> OverlapResults;
 
@@ -1259,7 +1924,7 @@ void ALPlayerCharacter::ApplyBasicAttackDamage(const FVector& AttackDirection)
 		DamageCenter,
 		DamageRotation.Quaternion(),
 		ObjectQueryParams,
-		FCollisionShape::MakeBox(BasicAttackDamageBoxHalfExtent),
+		FCollisionShape::MakeBox(CombatTuning.BoxHalfExtent),
 		QueryParams
 	);
 
@@ -1289,7 +1954,7 @@ void ALPlayerCharacter::ApplyBasicAttackDamage(const FVector& AttackDirection)
 
 		const bool bDamageApplied = ApplySkillDamageToActor(
 			HitActor,
-			BasicAttackDamage,
+			CombatTuning.Damage,
 			ELPlayerSkillID::BasicAttack
 		);
 
@@ -1323,25 +1988,14 @@ void ALPlayerCharacter::ApplyWindDamage(const FVector& AttackDirection)
 	}
 
 	const FRotator DamageRotation = NormalizedDirection.Rotation();
+	const FLPlayerSkillCombatTuning CombatTuning =
+		GetSkillCombatTuning(ELPlayerSkillID::Wind);
 
 	FVector DamageCenter =
 		GetActorLocation()
-		+ NormalizedDirection * WindDamageCenterOffset;
+		+ NormalizedDirection * CombatTuning.BoxCenterOffset;
 
-	DamageCenter.Z += WindDamageHeightOffset;
-
-	/*if (bDrawWindDamageDebug)
-	{
-		DrawDebugBox(
-			World,
-			DamageCenter,
-			WindDamageBoxHalfExtent,
-			DamageRotation.Quaternion(),
-			FColor::Red,
-			false,
-			1.0f
-		);
-	}*/
+	DamageCenter.Z += CombatTuning.BoxHeightOffset;
 
 	TArray<FOverlapResult> OverlapResults;
 
@@ -1357,7 +2011,7 @@ void ALPlayerCharacter::ApplyWindDamage(const FVector& AttackDirection)
 		DamageCenter,
 		DamageRotation.Quaternion(),
 		ObjectQueryParams,
-		FCollisionShape::MakeBox(WindDamageBoxHalfExtent),
+		FCollisionShape::MakeBox(CombatTuning.BoxHalfExtent),
 		QueryParams
 	);
 
@@ -1387,7 +2041,7 @@ void ALPlayerCharacter::ApplyWindDamage(const FVector& AttackDirection)
 
 		const bool bDamageApplied = ApplySkillDamageToActor(
 			HitActor,
-			WindDamage,
+			CombatTuning.Damage,
 			ELPlayerSkillID::Wind
 		);
 
@@ -1449,12 +2103,61 @@ float ALPlayerCharacter::GetFinalSkillDamage(
 	float BaseDamage,
 	ELPlayerSkillID SkillID) const
 {
-	if (bIdentityActive)
+	float FinalDamage = BaseDamage;
+
+	if (InventoryComponent && WeaponAttackPowerDamageRate > 0.0f)
 	{
-		return BaseDamage * IdentityDamageMultiplier;
+		const int32 WeaponAttackPower =
+			InventoryComponent->GetEquippedWeaponAttackPower();
+
+		if (WeaponAttackPower > 0)
+		{
+			FinalDamage *= 1.0f
+				+ static_cast<float>(WeaponAttackPower) * WeaponAttackPowerDamageRate;
+		}
 	}
 
-	return BaseDamage;
+	if (bIdentityActive)
+	{
+		FinalDamage *= IdentityDamageMultiplier;
+	}
+
+	return FinalDamage;
+}
+
+FText ALPlayerCharacter::GetSkillDisplayName(ELPlayerSkillID SkillID) const
+{
+	if (const ULPlayerSkillDataAsset* SkillDataAsset = GetSkillDataAsset(SkillID))
+	{
+		if (!SkillDataAsset->DisplayName.IsEmpty())
+		{
+			return SkillDataAsset->DisplayName;
+		}
+	}
+
+	if (const UEnum* SkillEnum = StaticEnum<ELPlayerSkillID>())
+	{
+		return SkillEnum->GetDisplayNameTextByValue(
+			static_cast<int64>(SkillID)
+		);
+	}
+
+	return FText::GetEmpty();
+}
+
+UTexture2D* ALPlayerCharacter::GetSkillIconTexture(
+	ELPlayerSkillID SkillID
+) const
+{
+	const ULPlayerSkillDataAsset* SkillDataAsset =
+		GetSkillDataAsset(SkillID);
+
+	if (!SkillDataAsset)
+	{
+		return nullptr;
+	}
+
+	return SkillDataAsset->IconTexture.Get();
 }
 
 float ALPlayerCharacter::GetCastRemaining() const
@@ -1535,42 +2238,37 @@ void ALPlayerCharacter::UseSkill(
 	
 	if (bSkillSucceeded)
 	{
-		SpendMana(ManaCost);
-		StartSkillCooldown(EquippedSkillID);
+		CommitSkillCostAndCooldown(EquippedSkillID);
 	}
 }
 
 
-bool ALPlayerCharacter::UseQSkill(const FVector& TargetLocation)
+bool ALPlayerCharacter::UseMeteorSkill(const FVector& TargetLocation)
 {
-	if (!MeteorActorClass)
+	if (!GetSkillDataAsset(ELPlayerSkillID::Meteor))
+	{
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("UseMeteorSkill Failed: DA_Meteor is not configured in SkillDatabase")
+		);
+
+		return false;
+	}
+
+	UClass* SkillActorClass = GetSkillActorClass(ELPlayerSkillID::Meteor);
+
+	if (!SkillActorClass || !SkillActorClass->IsChildOf(ALMeteorActor::StaticClass()))
 	{
 		return false;
 	}
 
-	FVector AttackDirection = TargetLocation - GetActorLocation();
-	AttackDirection.Z = 0.0f;
+	FVector AttackDirection;
+	FRotator AttackRotation;
 
-	if (AttackDirection.IsNearlyZero())
+	if (!PrepareActionDirection(TargetLocation, AttackDirection, AttackRotation))
 	{
 		return false;
-	}
-
-	AttackDirection.Normalize();
-
-	const FRotator AttackRotation = AttackDirection.Rotation();
-
-	SetActorRotation(
-		FRotator(
-			0.0f,
-			AttackRotation.Yaw,
-			0.0f
-		)
-	);
-
-	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
-	{
-		MovementComp->StopMovementImmediately();
 	}
 
 	FVector ImpactLocation = TargetLocation;
@@ -1580,7 +2278,7 @@ bool ALPlayerCharacter::UseQSkill(const FVector& TargetLocation)
 	SpawnParams.Instigator = this;
 
 	ALMeteorActor* MeteorActor = GetWorld()->SpawnActor<ALMeteorActor>(
-		MeteorActorClass,
+		SkillActorClass,
 		ImpactLocation,
 		FRotator::ZeroRotator,
 		SpawnParams
@@ -1591,91 +2289,94 @@ bool ALPlayerCharacter::UseQSkill(const FVector& TargetLocation)
 		return false;
 	}
 
-	MeteorActor->InitializeMeteor(ImpactLocation);
+	const FLPlayerSkillCombatTuning CombatTuning =
+		GetSkillCombatTuning(ELPlayerSkillID::Meteor);
 
-	SetCurrentActionState(ELPlayerActionState::Skill);
-
-	GetWorldTimerManager().ClearTimer(SkillTimerHandle);
-
-	GetWorldTimerManager().SetTimer(
-		SkillTimerHandle,
-		this,
-		&ALPlayerCharacter::EndSkill,
-		MeteorSkillLockDuration,
-		false
+	MeteorActor->InitializeMeteor(
+		ImpactLocation,
+		CombatTuning.Damage,
+		CombatTuning.Radius,
+		CombatTuning.SpawnHeightOffset,
+		CombatTuning.Duration,
+		GetSkillWarningNiagara(ELPlayerSkillID::Meteor),
+		GetSkillImpactNiagara(ELPlayerSkillID::Meteor)
 	);
+
+	StartSkillLock(ELPlayerSkillID::Meteor);
 
 	return true;
 }
 
-bool ALPlayerCharacter::UseWSkill(const FVector& TargetLocation)
+bool ALPlayerCharacter::UseIceLanceSkill(const FVector& TargetLocation)
 {
-	if (!IceLanceClass)
+	if (!GetSkillDataAsset(ELPlayerSkillID::IceLance))
 	{
-		return false;
-	}
-	
-	FVector SkillDirection = TargetLocation - GetActorLocation();
-	SkillDirection.Z = 0.0f;
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("UseIceLanceSkill Failed: DA_IceLance is not configured in SkillDatabase")
+		);
 
-	if (SkillDirection.IsNearlyZero())
-	{
 		return false;
 	}
 
-	SkillDirection.Normalize();
+	UClass* SkillActorClass = GetSkillActorClass(ELPlayerSkillID::IceLance);
+
+	if (!SkillActorClass || !SkillActorClass->IsChildOf(ALIceLanceActor::StaticClass()))
+	{
+		return false;
+	}
+
+	FVector SkillDirection;
+	FRotator SkillRotation;
+
+	if (!PrepareActionDirection(TargetLocation, SkillDirection, SkillRotation))
+	{
+		return false;
+	}
 
 	const FVector RightDirection = FVector::CrossProduct(
 		FVector::UpVector,
 		SkillDirection
 	).GetSafeNormal();
-
-	const FRotator SkillRotation = SkillDirection.Rotation();
-
-	SetActorRotation(
-		FRotator(
-			0.0f,
-			SkillRotation.Yaw,
-			0.0f
-		)
-	);
-	
-	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
-	{
-		MovementComp->StopMovementImmediately();
-	}
 	
 	SetCurrentActionState(ELPlayerActionState::Skill);
+
+	const FLPlayerIceLanceTuning IceLanceTuning =
+		GetSkillIceLanceTuning();
+	const FLPlayerSkillCombatTuning CombatTuning =
+		GetSkillCombatTuning(ELPlayerSkillID::IceLance);
 	
-	const float CenterIndex = (IceLanceCount - 1) * 0.5f;
+	const int32 LanceCount = FMath::Max(1, IceLanceTuning.Count);
+	const float CenterIndex = (LanceCount - 1) * 0.5f;
 	
-	for (int32 i = 0; i < IceLanceCount; ++i)
+	for (int32 i = 0; i < LanceCount; ++i)
 	{
 		const float SideIndex = i - CenterIndex;
 		
 		FVector StartLocation =
 			GetActorLocation()
-			- SkillDirection * IceLanceReadyBackOffset
-			+ RightDirection * (SideIndex * IceLanceReadySideSpacing);
+			- SkillDirection * IceLanceTuning.ReadyBackOffset
+			+ RightDirection * (SideIndex * IceLanceTuning.ReadySideSpacing);
 
 		const float HeightOffset =
-			IceLanceReadyHeight
-			- FMath::Abs(SideIndex) * IceLanceReadyHeightFalloff;
+			IceLanceTuning.ReadyHeight
+			- FMath::Abs(SideIndex) * IceLanceTuning.ReadyHeightFalloff;
 
 		StartLocation.Z += HeightOffset;
 		
 		FVector EndLocation = TargetLocation;
-		EndLocation.Z += IceLanceEndHeightOffset;
+		EndLocation.Z += IceLanceTuning.EndHeightOffset;
 		
 		FVector ControlLocation =
 			(StartLocation + EndLocation) * 0.5f;
 
-		ControlLocation += RightDirection * (SideIndex * IceLanceCurveSideOffset);
-		ControlLocation.Z += IceLanceCurveHeightOffset;
+		ControlLocation += RightDirection * (SideIndex * IceLanceTuning.CurveSideOffset);
+		ControlLocation.Z += IceLanceTuning.CurveHeightOffset;
 
 		const float FireDelay =
-			IceLanceReadyDuration
-			+ FMath::Abs(SideIndex) * IceLanceFireInterval;
+			IceLanceTuning.ReadyDuration
+			+ FMath::Abs(SideIndex) * IceLanceTuning.FireInterval;
 		
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = this;
@@ -1683,7 +2384,7 @@ bool ALPlayerCharacter::UseWSkill(const FVector& TargetLocation)
 
 		ALIceLanceActor* IceLance =
 			GetWorld()->SpawnActor<ALIceLanceActor>(
-				IceLanceClass,
+				SkillActorClass,
 				StartLocation,
 				SkillRotation,
 				SpawnParams
@@ -1695,65 +2396,56 @@ bool ALPlayerCharacter::UseWSkill(const FVector& TargetLocation)
 				StartLocation,
 				ControlLocation,
 				EndLocation,
-				IceLanceTravelDuration,
-				FireDelay
+				IceLanceTuning.TravelDuration,
+				FireDelay,
+				CombatTuning.Damage,
+				CombatTuning.Radius,
+				GetSkillImpactNiagara(ELPlayerSkillID::IceLance)
 			);
 		}
 	}
 	
-	if (WIceLanceNiagara)
+	if (UNiagaraSystem* IceLanceNiagara = GetSkillMainNiagara(ELPlayerSkillID::IceLance))
 	{
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(	
 			GetWorld(),
-			WIceLanceNiagara,
+			IceLanceNiagara,
 			GetActorLocation(),
 			GetActorRotation()
 		);
 	}
 
-	GetWorldTimerManager().ClearTimer(SkillTimerHandle);
-
-	GetWorldTimerManager().SetTimer(
-		SkillTimerHandle,
-		this,
-		&ALPlayerCharacter::EndSkill,
-		IceLanceSkillLockDuration,
-		false
-	);
+	StartSkillLock(ELPlayerSkillID::IceLance);
 
 	return true;
 }
 
-bool ALPlayerCharacter::UseESkill(const FVector& TargetLocation)
+bool ALPlayerCharacter::UseThunderSkill(const FVector& TargetLocation)
 {
-	if (!ThunderStormActorClass)
+	if (!GetSkillDataAsset(ELPlayerSkillID::Thunder))
+	{
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("UseThunderSkill Failed: DA_Thunder is not configured in SkillDatabase")
+		);
+
+		return false;
+	}
+
+	UClass* SkillActorClass = GetSkillActorClass(ELPlayerSkillID::Thunder);
+
+	if (!SkillActorClass || !SkillActorClass->IsChildOf(ALThunderActor::StaticClass()))
 	{
 		return false;
 	}
 
-	FVector AttackDirection = TargetLocation - GetActorLocation();
-	AttackDirection.Z = 0.0f;
+	FVector AttackDirection;
+	FRotator AttackRotation;
 
-	if (AttackDirection.IsNearlyZero())
+	if (!PrepareActionDirection(TargetLocation, AttackDirection, AttackRotation))
 	{
 		return false;
-	}
-
-	AttackDirection.Normalize();
-
-	const FRotator AttackRotation = AttackDirection.Rotation();
-
-	SetActorRotation(
-		FRotator(
-			0.0f,
-			AttackRotation.Yaw,
-			0.0f
-		)
-	);
-
-	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
-	{
-		MovementComp->StopMovementImmediately();
 	}
 
 	FActorSpawnParameters SpawnParams;
@@ -1762,7 +2454,7 @@ bool ALPlayerCharacter::UseESkill(const FVector& TargetLocation)
 
 	ALThunderActor* ThunderStormActor =
 		GetWorld()->SpawnActor<ALThunderActor>(
-			ThunderStormActorClass,
+			SkillActorClass,
 			TargetLocation,
 			FRotator::ZeroRotator,
 			SpawnParams
@@ -1773,86 +2465,166 @@ bool ALPlayerCharacter::UseESkill(const FVector& TargetLocation)
 		return false;
 	}
 
-	ThunderStormActor->InitializeThunderStorm(TargetLocation);
+	const FLPlayerSkillCombatTuning CombatTuning =
+		GetSkillCombatTuning(ELPlayerSkillID::Thunder);
 
-	SetCurrentActionState(ELPlayerActionState::Skill);
-
-	GetWorldTimerManager().ClearTimer(SkillTimerHandle);
-
-	GetWorldTimerManager().SetTimer(
-		SkillTimerHandle,
-		this,
-		&ALPlayerCharacter::EndSkill,
-		ThunderSkillLockDuration,
-		false
+	ThunderStormActor->InitializeThunderStorm(
+		TargetLocation,
+		CombatTuning.Damage,
+		CombatTuning.Radius,
+		CombatTuning.SpawnRadius,
+		CombatTuning.Count,
+		CombatTuning.TickInterval,
+		CombatTuning.SpawnHeightOffset,
+		GetSkillMainNiagara(ELPlayerSkillID::Thunder)
 	);
+
+	StartSkillLock(ELPlayerSkillID::Thunder);
 
 	return true;
 }
 
-bool ALPlayerCharacter::UseRSkill(const FVector& TargetLocation)
+bool ALPlayerCharacter::UseWindSkill(const FVector& TargetLocation)
 {
-	if (!RWindNiagara)
+	if (!GetSkillDataAsset(ELPlayerSkillID::Wind))
+	{
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("UseWindSkill Failed: DA_Wind is not configured in SkillDatabase")
+		);
+
+		return false;
+	}
+
+	FVector AttackDirection;
+	FRotator AttackRotation;
+
+	if (!PrepareActionDirection(TargetLocation, AttackDirection, AttackRotation))
 	{
 		return false;
 	}
 
-	FVector AttackDirection = TargetLocation - GetActorLocation();
-	AttackDirection.Z = 0.0f;
+	SetCurrentActionState(ELPlayerActionState::Skill);
 
-	if (AttackDirection.IsNearlyZero())
+	const FLPlayerSkillCombatTuning CombatTuning =
+		GetSkillCombatTuning(ELPlayerSkillID::Wind);
+
+	FVector SpawnLocation =
+		GetActorLocation()
+		+ AttackDirection * CombatTuning.ForwardOffset;
+
+	SpawnLocation.Z += CombatTuning.HeightOffset;
+
+	if (UNiagaraSystem* WindNiagara = GetSkillMainNiagara(ELPlayerSkillID::Wind))
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			WindNiagara,
+			SpawnLocation,
+			AttackRotation
+		);
+	}
+
+	ApplyWindDamage(AttackDirection);
+	PlaySkillImpactSound(ELPlayerSkillID::Wind, SpawnLocation);
+
+	StartSkillLock(ELPlayerSkillID::Wind);
+
+	return true;
+}
+
+bool ALPlayerCharacter::UseFrostFieldSkill(const FVector& TargetLocation)
+{
+	UWorld* World = GetWorld();
+
+	if (!World)
 	{
 		return false;
 	}
 
-	AttackDirection.Normalize();
+	if (!GetSkillDataAsset(ELPlayerSkillID::FrostField))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("FrostField failed: DA_FrostField is not set."));
+		return false;
+	}
 
-	const FRotator AttackRotation = AttackDirection.Rotation();
+	FVector SkillDirection = TargetLocation - GetActorLocation();
+	SkillDirection.Z = 0.0f;
 
-	SetActorRotation(
-		FRotator(
-			0.0f,
-			AttackRotation.Yaw,
-			0.0f
-		)
-	);
+	if (!SkillDirection.IsNearlyZero())
+	{
+		SkillDirection.Normalize();
+		const FRotator SkillRotation = SkillDirection.Rotation();
+		SetActorRotation(FRotator(0.0f, SkillRotation.Yaw, 0.0f));
+	}
 
 	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
 	{
 		MovementComp->StopMovementImmediately();
 	}
 
-	SetCurrentActionState(ELPlayerActionState::Skill);
+	const FLPlayerSkillCombatTuning CombatTuning =
+		GetSkillCombatTuning(ELPlayerSkillID::FrostField);
 
-	FVector SpawnLocation =
-		GetActorLocation()
-		+ AttackDirection * WindForwardOffset;
+	FVector SpawnLocation = TargetLocation;
+	SpawnLocation.Z += CombatTuning.SpawnHeightOffset;
 
-	SpawnLocation.Z += WindHeightOffset;
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = this;
 
-	UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-		GetWorld(),
-		RWindNiagara,
+	TSubclassOf<ALGroundAreaSkillActor> AreaActorClass =
+		ALGroundAreaSkillActor::StaticClass();
+	UClass* DataActorClass = GetSkillActorClass(ELPlayerSkillID::FrostField);
+
+	if (DataActorClass)
+	{
+		if (DataActorClass->IsChildOf(ALGroundAreaSkillActor::StaticClass()))
+		{
+			AreaActorClass = DataActorClass;
+		}
+		else
+		{
+			UE_LOG(
+				LogTemp,
+				Warning,
+				TEXT("FrostField SkillActorClass must inherit from ALGroundAreaSkillActor: %s"),
+				*DataActorClass->GetName()
+			);
+			return false;
+		}
+	}
+
+	ALGroundAreaSkillActor* FrostFieldActor =
+		World->SpawnActor<ALGroundAreaSkillActor>(
+			AreaActorClass,
+			SpawnLocation,
+			FRotator::ZeroRotator,
+			SpawnParams
+		);
+
+	if (!FrostFieldActor)
+	{
+		return false;
+	}
+
+	FrostFieldActor->InitializeGroundAreaSkill(
+		ELPlayerSkillID::FrostField,
 		SpawnLocation,
-		AttackRotation
+		CombatTuning.Damage,
+		CombatTuning.Radius,
+		CombatTuning.Duration,
+		CombatTuning.TickInterval,
+		GetSkillMainNiagara(ELPlayerSkillID::FrostField)
 	);
-	
-	ApplyWindDamage(AttackDirection);
-	
-	GetWorldTimerManager().ClearTimer(SkillTimerHandle);
 
-	GetWorldTimerManager().SetTimer(
-		SkillTimerHandle,
-		this,
-		&ALPlayerCharacter::EndSkill,
-		WindSkillLockDuration,
-		false
-	);
+	StartSkillLock(ELPlayerSkillID::FrostField);
 
 	return true;
 }
 
-bool ALPlayerCharacter::UseVSkill(const FVector& TargetLocation)
+bool ALPlayerCharacter::UseMeteorRainSkill(const FVector& TargetLocation)
 {
 	// 아직 MeteorRain 구현 전이므로 실패 처리.
 	// false를 반환해야 V를 눌러도 쿨타임이 돌지 않는다.
@@ -1861,10 +2633,31 @@ bool ALPlayerCharacter::UseVSkill(const FVector& TargetLocation)
 
 void ALPlayerCharacter::CancelCurrentAction()
 {
-	CancelSkillCast();
+	const ELPlayerActionState ActionState = GetCurrentActionState();
 
-	GetWorldTimerManager().ClearTimer(BasicAttackTimerHandle);
-	GetWorldTimerManager().ClearTimer(SkillTimerHandle);
+	if (ActionState == ELPlayerActionState::Casting || bIsCasting)
+	{
+		CancelSkillCast();
+	}
+
+	if (ActionState == ELPlayerActionState::BasicAttack)
+	{
+		GetWorldTimerManager().ClearTimer(BasicAttackTimerHandle);
+
+		if (const ULPlayerSkillDataAsset* BasicAttackDataAsset =
+			GetSkillDataAsset(ELPlayerSkillID::BasicAttack))
+		{
+			StopAnimMontage(BasicAttackDataAsset->SkillMontage);
+		}
+
+		bBasicAttackHitTriggered = false;
+	}
+
+	if (ActionState == ELPlayerActionState::Skill)
+	{
+		GetWorldTimerManager().ClearTimer(SkillTimerHandle);
+		StopActiveSkillMontage();
+	}
 	
 	Super::CancelCurrentAction();
 }

@@ -20,8 +20,43 @@ ALThunderActor::ALThunderActor()
 
 void ALThunderActor::InitializeThunderStorm(const FVector& InCenterLocation)
 {
+	InitializeThunderStorm(
+		InCenterLocation,
+		ThunderDamage,
+		ThunderDamageRadius,
+		StrikeRadius,
+		StrikeCount,
+		StrikeInterval,
+		StrikeHeightOffset,
+		ThunderStrikeNiagara
+	);
+}
+
+void ALThunderActor::InitializeThunderStorm(
+	const FVector& InCenterLocation,
+	float InDamage,
+	float InDamageRadius,
+	float InStrikeRadius,
+	int32 InStrikeCount,
+	float InStrikeInterval,
+	float InStrikeHeightOffset,
+	UNiagaraSystem* InThunderStrikeNiagara
+)
+{
 	CenterLocation = InCenterLocation;
 	SetActorLocation(CenterLocation);
+
+	ThunderDamage = FMath::Max(0.0f, InDamage);
+	ThunderDamageRadius = FMath::Max(1.0f, InDamageRadius);
+	StrikeRadius = FMath::Max(0.0f, InStrikeRadius);
+	StrikeCount = FMath::Max(0, InStrikeCount);
+	StrikeInterval = FMath::Max(0.01f, InStrikeInterval);
+	StrikeHeightOffset = InStrikeHeightOffset;
+
+	if (InThunderStrikeNiagara)
+	{
+		ThunderStrikeNiagara = InThunderStrikeNiagara;
+	}
 	
 	CurrentStrikeCount = 0;
 	
@@ -39,12 +74,6 @@ void ALThunderActor::InitializeThunderStorm(const FVector& InCenterLocation)
 
 void ALThunderActor::SpawnThunderStrike()
 {
-	if (!ThunderStrikeNiagara)
-	{
-		Destroy();
-		return;
-	}
-	
 	if (CurrentStrikeCount >= StrikeCount)
 	{
 		GetWorldTimerManager().ClearTimer(StrikeTimerHandle);
@@ -62,12 +91,24 @@ void ALThunderActor::SpawnThunderStrike()
 	StrikeLocation.Y += FMath::Sin(Radian) * RandomRadius;
 	StrikeLocation.Z += StrikeHeightOffset;
 	
-	UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-		GetWorld(),
-		ThunderStrikeNiagara,
-		StrikeLocation,
-		FRotator::ZeroRotator
-	);
+	if (ThunderStrikeNiagara)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			ThunderStrikeNiagara,
+			StrikeLocation,
+			FRotator::ZeroRotator
+		);
+	}
+
+	if (ALPlayerCharacter* OwnerPlayer = Cast<ALPlayerCharacter>(GetOwner()))
+	{
+		OwnerPlayer->PlaySkillImpactSound(
+			ELPlayerSkillID::Thunder,
+			StrikeLocation
+		);
+	}
+
 	ApplyThunderStrikeDamage(StrikeLocation);
 	
 	CurrentStrikeCount++;

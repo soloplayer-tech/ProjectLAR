@@ -13,4 +13,5 @@ enum class ELPlayerSkillID : uint8
 	IceLance		UMETA(DisplayName="IceLance"),
 	Thunder			UMETA(DisplayName="Thunder"),
 	Wind			UMETA(DisplayName="Wind"),
+	FrostField		UMETA(DisplayName="FrostField"),
 };

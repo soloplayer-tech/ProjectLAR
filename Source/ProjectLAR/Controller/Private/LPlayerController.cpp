@@ -8,8 +8,12 @@
 #include "LPlayerUIWidget.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
 #include "Engine/LocalPlayer.h"
+#include "ProjectLAR/Item/Public/LInventoryComponent.h"
 #include "ProjectLAR/Player/Public/LPlayerCharacter.h"
+#include "ProjectLAR/UI/Public/LEquipmentWindowWidget.h"
 #include "ProjectLAR/UI/Public/LSkillWindowWidget.h"
+#include "ProjectLAR/UI/Public/LInventoryWindowWidget.h"
+#include "ProjectLAR/UI/Public/LWeaponEnhanceWindowWidget.h"
 #include "ProjectLAR/Player/Public/LPlayerCharacterBase.h"
 
 #define ECC_SkillTarget ECC_GameTraceChannel1
@@ -30,6 +34,8 @@ void ALPlayerController::BeginPlay()
 	
 	CreatePlayerUIWidget();
 	CreateSkillWindowWidget();
+	CreateInventoryWindowWidget();
+	CreateEquipmentWindowWidget();
 
 	if (ULocalPlayer* LocalPlayer = GetLocalPlayer())
 	{
@@ -167,7 +173,47 @@ void ALPlayerController::SetupInputComponent()
 				ETriggerEvent::Started,
 				this,
 				&ALPlayerController::SkillVInput
-				);
+			);
+		}
+
+		if (QuickItem1Action)
+		{
+			EnhancedInput->BindAction(
+				QuickItem1Action,
+				ETriggerEvent::Started,
+				this,
+				&ALPlayerController::QuickItem1Input
+			);
+		}
+
+		if (QuickItem2Action)
+		{
+			EnhancedInput->BindAction(
+				QuickItem2Action,
+				ETriggerEvent::Started,
+				this,
+				&ALPlayerController::QuickItem2Input
+			);
+		}
+
+		if (QuickItem3Action)
+		{
+			EnhancedInput->BindAction(
+				QuickItem3Action,
+				ETriggerEvent::Started,
+				this,
+				&ALPlayerController::QuickItem3Input
+			);
+		}
+
+		if (QuickItem4Action)
+		{
+			EnhancedInput->BindAction(
+				QuickItem4Action,
+				ETriggerEvent::Started,
+				this,
+				&ALPlayerController::QuickItem4Input
+			);
 		}
 		
 		if (IdentityAction)
@@ -209,6 +255,27 @@ void ALPlayerController::SetupInputComponent()
 				&ALPlayerController::ToggleSkillWindowInput
 			);
 		}
+		
+		if (ToggleInventoryWindowAction)
+		{
+			EnhancedInput->BindAction(
+				ToggleInventoryWindowAction,
+				ETriggerEvent::Started,
+				this,
+				&ALPlayerController::ToggleInventoryWindowInput
+			);
+		}
+
+		if (ToggleEquipmentWindowAction)
+		{
+			EnhancedInput->BindAction(
+				ToggleEquipmentWindowAction,
+				ETriggerEvent::Started,
+				this,
+				&ALPlayerController::ToggleEquipmentWindowInput
+			);
+		}
+
 		if (InteractAction)
 		{
 			EnhancedInput->BindAction(
@@ -227,6 +294,8 @@ void ALPlayerController::OnPossess(APawn* InPawn)
 
 	BindPlayerUIToPawn(InPawn);
 	BindSkillWindowToPawn(InPawn);
+	BindInventoryWindowToPawn(InPawn);
+	BindEquipmentWindowToPawn(InPawn);
 }
 
 void ALPlayerController::IdentityInput()
@@ -335,10 +404,7 @@ void ALPlayerController::MoveToMouseCursor()
 		return;
 	}
 
-	if (PlayerCharacter->GetCurrentActionState() == ELPlayerActionState::Casting)
-	{
-		PlayerCharacter->CancelCurrentAction();
-	}
+	PlayerCharacter->CancelCurrentActionFor(ELPlayerActionCommand::Move);
 
 	FVector TargetLocation;
 	
@@ -387,8 +453,7 @@ void ALPlayerController::DashInput()
 	
 	StopMovement();
 
-	// 기본 공격 중 대쉬하면 기존 행동은 끊는다
-	PlayerCharacter->CancelCurrentAction();
+	PlayerCharacter->CancelCurrentActionFor(ELPlayerActionCommand::Dash);
 	
 	PlayerCharacter->Dash(DashDirection);
 }
@@ -402,7 +467,7 @@ void ALPlayerController::BasicAttackInput()
 		return;
 	}
 	
-	if (!PlayerCharacter->CanBasicAttack())
+	if (!PlayerCharacter->CanStartAction(ELPlayerActionCommand::BasicAttack))
 	{
 		return;
 	}
@@ -480,6 +545,26 @@ void ALPlayerController::SkillVInput()
 
 }
 
+void ALPlayerController::QuickItem1Input()
+{
+	HandleQuickItemInput(0);
+}
+
+void ALPlayerController::QuickItem2Input()
+{
+	HandleQuickItemInput(1);
+}
+
+void ALPlayerController::QuickItem3Input()
+{
+	HandleQuickItemInput(2);
+}
+
+void ALPlayerController::QuickItem4Input()
+{
+	HandleQuickItemInput(3);
+}
+
 void ALPlayerController::HandleSkillInput(ELPlayerSkillSlot SkillSlot)
 {
 	ALPlayerCharacter* PlayerCharacter = Cast<ALPlayerCharacter>(GetPawn());
@@ -504,6 +589,27 @@ void ALPlayerController::HandleSkillInput(ELPlayerSkillSlot SkillSlot)
 	StopMovement();
 	
 	PlayerCharacter->UseSkill(SkillSlot, MouseWorldLocation);
+}
+
+void ALPlayerController::HandleQuickItemInput(int32 QuickItemSlotIndex)
+{
+	ALPlayerCharacter* PlayerCharacter =
+		Cast<ALPlayerCharacter>(GetPawn());
+
+	if (!PlayerCharacter)
+	{
+		return;
+	}
+
+	ULInventoryComponent* InventoryComponent =
+		PlayerCharacter->GetInventoryComponent();
+
+	if (!InventoryComponent)
+	{
+		return;
+	}
+
+	InventoryComponent->UseQuickItemSlot(QuickItemSlotIndex);
 }
 
 
@@ -580,6 +686,170 @@ void ALPlayerController::ToggleSkillWindowInput()
 			? ESlateVisibility::Collapsed
 			: ESlateVisibility::Visible
 	);
+
+	if (!bCurrentlyVisible)
+	{
+		SkillWindowWidget->BringToFront();
+	}
+}
+
+void ALPlayerController::CreateInventoryWindowWidget()
+{
+	if (InventoryWindowWidget)
+	{
+		BindInventoryWindowToPawn(GetPawn());
+		return;
+	}
+
+	if (!IsLocalController())
+	{
+		return;
+	}
+
+	if (!InventoryWindowWidgetClass)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CreateInventoryWindowWidget Failed: InventoryWindowWidgetClass is null"));
+		return;
+	}
+
+	InventoryWindowWidget = CreateWidget<ULInventoryWindowWidget>(
+		this,
+		InventoryWindowWidgetClass
+	);
+
+	if (!InventoryWindowWidget)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CreateInventoryWindowWidget Failed: CreateWidget returned null"));
+		return;
+	}
+
+	InventoryWindowWidget->AddToViewport(55);
+	InventoryWindowWidget->SetVisibility(ESlateVisibility::Collapsed);
+
+	BindInventoryWindowToPawn(GetPawn());
+
+	UE_LOG(LogTemp, Warning, TEXT("InventoryWindowWidget Created"));
+}
+
+void ALPlayerController::BindInventoryWindowToPawn(APawn* InPawn)
+{
+	if (!InventoryWindowWidget)
+	{
+		return;
+	}
+
+	ALPlayerCharacter* PlayerCharacter =
+		Cast<ALPlayerCharacter>(InPawn);
+
+	InventoryWindowWidget->SetObservedPlayer(PlayerCharacter);
+}
+
+void ALPlayerController::ToggleInventoryWindowInput()
+{
+	if (!InventoryWindowWidget)
+	{
+		CreateInventoryWindowWidget();
+	}
+
+	if (!InventoryWindowWidget)
+	{
+		return;
+	}
+
+	const bool bCurrentlyVisible =
+		InventoryWindowWidget->GetVisibility() != ESlateVisibility::Collapsed;
+
+	InventoryWindowWidget->SetVisibility(
+		bCurrentlyVisible
+			? ESlateVisibility::Collapsed
+			: ESlateVisibility::Visible
+	);
+
+	if (!bCurrentlyVisible)
+	{
+		InventoryWindowWidget->BringToFront();
+	}
+}
+
+void ALPlayerController::CreateEquipmentWindowWidget()
+{
+	if (EquipmentWindowWidget)
+	{
+		BindEquipmentWindowToPawn(GetPawn());
+		return;
+	}
+
+	if (!IsLocalController())
+	{
+		return;
+	}
+
+	TSubclassOf<ULEquipmentWindowWidget> WidgetClassToUse =
+		EquipmentWindowWidgetClass;
+
+	if (!WidgetClassToUse)
+	{
+		WidgetClassToUse = ULEquipmentWindowWidget::StaticClass();
+	}
+
+	EquipmentWindowWidget = CreateWidget<ULEquipmentWindowWidget>(
+		this,
+		WidgetClassToUse
+	);
+
+	if (!EquipmentWindowWidget)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CreateEquipmentWindowWidget Failed"));
+		return;
+	}
+
+	EquipmentWindowWidget->AddToViewport(56);
+	EquipmentWindowWidget->SetVisibility(ESlateVisibility::Collapsed);
+
+	BindEquipmentWindowToPawn(GetPawn());
+
+	UE_LOG(LogTemp, Warning, TEXT("EquipmentWindowWidget Created"));
+}
+
+void ALPlayerController::BindEquipmentWindowToPawn(APawn* InPawn)
+{
+	if (!EquipmentWindowWidget)
+	{
+		return;
+	}
+
+	ALPlayerCharacter* PlayerCharacter =
+		Cast<ALPlayerCharacter>(InPawn);
+
+	EquipmentWindowWidget->SetObservedPlayer(PlayerCharacter);
+}
+
+void ALPlayerController::ToggleEquipmentWindowInput()
+{
+	if (!EquipmentWindowWidget)
+	{
+		CreateEquipmentWindowWidget();
+	}
+
+	if (!EquipmentWindowWidget)
+	{
+		return;
+	}
+
+	const bool bCurrentlyVisible =
+		EquipmentWindowWidget->GetVisibility() != ESlateVisibility::Collapsed;
+
+	EquipmentWindowWidget->SetVisibility(
+		bCurrentlyVisible
+			? ESlateVisibility::Collapsed
+			: ESlateVisibility::Visible
+	);
+
+	if (!bCurrentlyVisible)
+	{
+		EquipmentWindowWidget->BringToFront();
+		EquipmentWindowWidget->RefreshEquipmentWindow();
+	}
 }
 
 /*FHitResult HitResult;
@@ -623,6 +893,13 @@ void ALPlayerController::ClearCurrentInteractable(
 
 void ALPlayerController::InteractInput()
 {
+	if (ULWeaponEnhanceWindowWidget* ActiveEnhanceWindow =
+		ULWeaponEnhanceWindowWidget::GetActiveWeaponEnhanceWindow())
+	{
+		ActiveEnhanceWindow->CloseWindow();
+		return;
+	}
+
 	if (!CurrentInteractable)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Interact Failed: No CurrentInteractable"));

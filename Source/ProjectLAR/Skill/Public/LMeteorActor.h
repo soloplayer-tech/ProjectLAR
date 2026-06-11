@@ -25,6 +25,15 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	
 	void InitializeMeteor(const FVector& InImpactLocation);
+	void InitializeMeteor(
+		const FVector& InImpactLocation,
+		float InDamage,
+		float InImpactDamageRadius,
+		float InMeteorStartHeight,
+		float InFallDuration,
+		UNiagaraSystem* InMeteorWarningNiagara,
+		UNiagaraSystem* InImpactNiagara
+	);
 	
 private:
 	void Impact();

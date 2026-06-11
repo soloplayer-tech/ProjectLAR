@@ -30,7 +30,42 @@ void ALMeteorActor::BeginPlay()
 
 void ALMeteorActor::InitializeMeteor(const FVector& InImpactLocation)
 {
+	InitializeMeteor(
+		InImpactLocation,
+		MeteorDamage,
+		ImpactDamageRadius,
+		MeteorStartHeight,
+		FallDuration,
+		MeteorWarningNiagara,
+		ImpactNiagara
+	);
+}
+
+void ALMeteorActor::InitializeMeteor(
+	const FVector& InImpactLocation,
+	float InDamage,
+	float InImpactDamageRadius,
+	float InMeteorStartHeight,
+	float InFallDuration,
+	UNiagaraSystem* InMeteorWarningNiagara,
+	UNiagaraSystem* InImpactNiagara
+)
+{
 	ImpactLocation = InImpactLocation;
+	MeteorDamage = FMath::Max(0.0f, InDamage);
+	ImpactDamageRadius = FMath::Max(1.0f, InImpactDamageRadius);
+	MeteorStartHeight = FMath::Max(0.0f, InMeteorStartHeight);
+	FallDuration = FMath::Max(0.01f, InFallDuration);
+
+	if (InMeteorWarningNiagara)
+	{
+		MeteorWarningNiagara = InMeteorWarningNiagara;
+	}
+
+	if (InImpactNiagara)
+	{
+		ImpactNiagara = InImpactNiagara;
+	}
 
 	StartLocation = ImpactLocation;
 	StartLocation.Z += MeteorStartHeight;
@@ -109,6 +144,14 @@ void ALMeteorActor::Impact()
 			ImpactNiagara,
 			ImpactLocation,
 			FRotator::ZeroRotator
+		);
+	}
+
+	if (ALPlayerCharacter* OwnerPlayer = Cast<ALPlayerCharacter>(GetOwner()))
+	{
+		OwnerPlayer->PlaySkillImpactSound(
+			ELPlayerSkillID::Meteor,
+			ImpactLocation
 		);
 	}
 

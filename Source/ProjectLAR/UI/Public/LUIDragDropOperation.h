@@ -8,6 +8,7 @@
 #include "LUIDragDropOperation.generated.h"
 
 class UTexture2D;
+class ULItemDataAsset;
 
 UCLASS()
 class PROJECTLAR_API ULUIDragDropOperation : public UDragDropOperation
@@ -31,7 +32,16 @@ public:
 	int32 ItemID = 0;
 
 	UPROPERTY(BlueprintReadWrite, Category = "UI Drag")
+	TObjectPtr<ULItemDataAsset> ItemData;
+
+	UPROPERTY(BlueprintReadWrite, Category = "UI Drag")
+	int32 SourceInventorySlotIndex = INDEX_NONE;
+
+	UPROPERTY(BlueprintReadWrite, Category = "UI Drag")
 	int32 ItemCount = 0;
+
+	UPROPERTY(BlueprintReadWrite, Category = "UI Drag")
+	bool bFromEquipmentSlot = false;
 	
 	UPROPERTY(BlueprintReadWrite, Category = "UI Drag")
 	bool bFromActionSlot = false;
