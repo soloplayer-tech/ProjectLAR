@@ -82,7 +82,7 @@ void ALThunderActor::ApplyThunderStrikeDamage(const FVector& StrikeLocation)
 		return;
 	}
 
-	if (bDrawThunderDamageDebug)
+	/*if (bDrawThunderDamageDebug)
 	{
 		DrawDebugSphere(
 			World,
@@ -93,7 +93,7 @@ void ALThunderActor::ApplyThunderStrikeDamage(const FVector& StrikeLocation)
 			false,
 			1.0f
 		);
-	}
+	}*/
 
 	TArray<FOverlapResult> OverlapResults;
 

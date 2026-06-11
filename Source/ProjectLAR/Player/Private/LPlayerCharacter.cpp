@@ -7,10 +7,14 @@
 #include "DrawDebugHelpers.h"
 #include "OB_BossCharacter.h"
 #include "OB_BossFSMComponent.h"
+// #include "DrawDebugHelpers.h"
+// #include "Components/SlateWrapperTypes.h"
 #include "Engine/World.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/OverlapResult.h"
 #include "ProjectLAR/Combat/Public/LDamageable.h"
+#include "Kismet/GameplayStatics.h"
+#include "ProjectLAR/Save/Public/LPlayerSaveGames.h"
 #include "ProjectLAR/Skill/Public/LIceLanceActor.h"
 
 ALPlayerCharacter::ALPlayerCharacter()
@@ -25,6 +29,8 @@ void ALPlayerCharacter::BeginPlay()
 	CurrentHP = MaxHP;
 	CurrentMana = MaxMana;
 	CurrentIdentityGauge = 0.f;
+
+	LoadEquippedSkillSlots();
 }
 
 void ALPlayerCharacter::Tick(float DeltaSeconds)
@@ -308,6 +314,8 @@ void ALPlayerCharacter::ActivateIdentity()
 	
 	BP_OnIdentityActivated();
 
+	
+	
 	GetWorldTimerManager().ClearTimer(IdentityTimerHandle);
 
 	GetWorldTimerManager().SetTimer(
@@ -323,6 +331,8 @@ void ALPlayerCharacter::EndIdentity()
 {
 	bIdentityActive = false;
 	StopIdentityBuffVFX();
+	
+	BP_OnIdentityEnded();
 	
 	GetWorldTimerManager().ClearTimer(IdentityTimerHandle);
 }
@@ -435,6 +445,7 @@ void ALPlayerCharacter::StartIdentityBuffVFX()
 			
 		);
 }
+
 
 void ALPlayerCharacter::StopIdentityBuffVFX()
 {
@@ -797,6 +808,18 @@ ELPlayerSkillID ALPlayerCharacter::GetEquippedSkillID(ELPlayerSkillSlot SkillSlo
 
 	case ELPlayerSkillSlot::V:
 		return VSlotSkill;
+		
+	case ELPlayerSkillSlot::A:
+		return ASlotSkill;
+		
+	case ELPlayerSkillSlot::S:
+		return SSlotSkill;
+		
+	case ELPlayerSkillSlot::D:
+		return DSlotSkill;
+		
+	case ELPlayerSkillSlot::F:
+		return FSlotSkill;
 
 	default:
 		return ELPlayerSkillID::None;
@@ -829,9 +852,87 @@ void ALPlayerCharacter::SetEquippedSkillID(
 		VSlotSkill = SkillID;
 		break;
 		
+	case ELPlayerSkillSlot::A:
+		ASlotSkill = SkillID;
+		break;
+		
+	case ELPlayerSkillSlot::S:
+		SSlotSkill = SkillID;
+		break;
+		
+	case ELPlayerSkillSlot::D:
+		DSlotSkill = SkillID;
+		break;
+		
+	case ELPlayerSkillSlot::F:
+		FSlotSkill = SkillID;
+		break;
+		
+		
 	default:
 		break;
 	}
+}
+
+void ALPlayerCharacter::EquipSkillToSlot(
+	ELPlayerSkillSlot SkillSlot,
+	ELPlayerSkillID SkillID
+)
+{
+	if (SkillID == ELPlayerSkillID::None)
+	{
+		SetEquippedSkillID(SkillSlot, ELPlayerSkillID::None);
+
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("EquipSkillToSlot Clear / Slot: %s"),
+			*UEnum::GetValueAsString(SkillSlot)
+		);
+
+		
+		SaveEquippedSkillSlots();
+		
+		return;
+	}
+
+	const TArray<ELPlayerSkillSlot> SkillSlots =
+	{
+		ELPlayerSkillSlot::Q,
+		ELPlayerSkillSlot::W,
+		ELPlayerSkillSlot::E,
+		ELPlayerSkillSlot::R,
+		ELPlayerSkillSlot::A,
+		ELPlayerSkillSlot::S,
+		ELPlayerSkillSlot::D,
+		ELPlayerSkillSlot::F,
+		ELPlayerSkillSlot::V,
+	};
+
+	for (const ELPlayerSkillSlot ExistingSlot : SkillSlots)
+	{
+		if (ExistingSlot == SkillSlot)
+		{
+			continue;
+		}
+
+		if (GetEquippedSkillID(ExistingSlot) == SkillID)
+		{
+			SetEquippedSkillID(ExistingSlot, ELPlayerSkillID::None);
+		}
+	}
+
+	SetEquippedSkillID(SkillSlot, SkillID);
+
+	UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("EquipSkillToSlot Success / Slot: %s / Skill: %s"),
+		*UEnum::GetValueAsString(SkillSlot),
+		*UEnum::GetValueAsString(SkillID)
+	);
+	
+	SaveEquippedSkillSlots();
 }
 
 bool ALPlayerCharacter::ExecuteSkillByID(
@@ -1131,7 +1232,7 @@ void ALPlayerCharacter::ApplyBasicAttackDamage(const FVector& AttackDirection)
 
 	DamageCenter.Z += BasicAttackDamageHeightOffset;
 
-	if (bDrawBasicAttackDamageDebug)
+	/*if (bDrawBasicAttackDamageDebug)
 	{
 		DrawDebugBox(
 			World,
@@ -1142,7 +1243,7 @@ void ALPlayerCharacter::ApplyBasicAttackDamage(const FVector& AttackDirection)
 			false,
 			1.0f
 		);
-	}
+	}*/
 
 	TArray<FOverlapResult> OverlapResults;
 
@@ -1229,7 +1330,7 @@ void ALPlayerCharacter::ApplyWindDamage(const FVector& AttackDirection)
 
 	DamageCenter.Z += WindDamageHeightOffset;
 
-	if (bDrawWindDamageDebug)
+	/*if (bDrawWindDamageDebug)
 	{
 		DrawDebugBox(
 			World,
@@ -1240,7 +1341,7 @@ void ALPlayerCharacter::ApplyWindDamage(const FVector& AttackDirection)
 			false,
 			1.0f
 		);
-	}
+	}*/
 
 	TArray<FOverlapResult> OverlapResults;
 
@@ -1438,6 +1539,7 @@ void ALPlayerCharacter::UseSkill(
 		StartSkillCooldown(EquippedSkillID);
 	}
 }
+
 
 bool ALPlayerCharacter::UseQSkill(const FVector& TargetLocation)
 {
@@ -1765,4 +1867,123 @@ void ALPlayerCharacter::CancelCurrentAction()
 	GetWorldTimerManager().ClearTimer(SkillTimerHandle);
 	
 	Super::CancelCurrentAction();
+}
+
+void ALPlayerCharacter::SaveEquippedSkillSlots()
+{
+	ULPlayerSaveGame* SaveGameInstance = nullptr;
+
+	if (UGameplayStatics::DoesSaveGameExist(
+		PlayerSaveSlotName,
+		PlayerSaveUserIndex
+	))
+	{
+		SaveGameInstance = Cast<ULPlayerSaveGame>(
+			UGameplayStatics::LoadGameFromSlot(
+				PlayerSaveSlotName,
+				PlayerSaveUserIndex
+			)
+		);
+	}
+
+	if (!SaveGameInstance)
+	{
+		SaveGameInstance = Cast<ULPlayerSaveGame>(
+			UGameplayStatics::CreateSaveGameObject(
+				ULPlayerSaveGame::StaticClass()
+			)
+		);
+	}
+
+	if (!SaveGameInstance)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SaveEquippedSkillSlots Failed: SaveGameInstance is null"));
+		return;
+	}
+
+	SaveGameInstance->SavedSkillSlots.Empty();
+
+	const TArray<ELPlayerSkillSlot> SkillSlots =
+	{
+		ELPlayerSkillSlot::Q,
+		ELPlayerSkillSlot::W,
+		ELPlayerSkillSlot::E,
+		ELPlayerSkillSlot::R,
+		ELPlayerSkillSlot::A,
+		ELPlayerSkillSlot::S,
+		ELPlayerSkillSlot::D,
+		ELPlayerSkillSlot::F,
+		ELPlayerSkillSlot::V
+	};
+
+	for (const ELPlayerSkillSlot SkillSlot : SkillSlots)
+	{
+		FLPlayerSkillSlotSaveData SaveData;
+		SaveData.SkillSlot = SkillSlot;
+		SaveData.SkillID = GetEquippedSkillID(SkillSlot);
+
+		SaveGameInstance->SavedSkillSlots.Add(SaveData);
+	}
+
+	const bool bSaved = UGameplayStatics::SaveGameToSlot(
+		SaveGameInstance,
+		PlayerSaveSlotName,
+		PlayerSaveUserIndex
+	);
+
+	UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("SaveEquippedSkillSlots / Success=%d / Count=%d"),
+		bSaved,
+		SaveGameInstance->SavedSkillSlots.Num()
+	);
+}
+
+void ALPlayerCharacter::LoadEquippedSkillSlots()
+{
+	if (!UGameplayStatics::DoesSaveGameExist(
+		PlayerSaveSlotName,
+		PlayerSaveUserIndex
+	))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LoadEquippedSkillSlots: Save file does not exist. Use default slots."));
+		return;
+	}
+
+	ULPlayerSaveGame* SaveGameInstance = Cast<ULPlayerSaveGame>(
+		UGameplayStatics::LoadGameFromSlot(
+			PlayerSaveSlotName,
+			PlayerSaveUserIndex
+		)
+	);
+
+	if (!SaveGameInstance)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LoadEquippedSkillSlots Failed: SaveGameInstance is null"));
+		return;
+	}
+
+	for (const FLPlayerSkillSlotSaveData& SaveData : SaveGameInstance->SavedSkillSlots)
+	{
+		SetEquippedSkillID(
+			SaveData.SkillSlot,
+			SaveData.SkillID
+		);
+
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("Load Skill Slot / Slot=%s / Skill=%s"),
+			*UEnum::GetValueAsString(SaveData.SkillSlot),
+			*UEnum::GetValueAsString(SaveData.SkillID)
+		);
+	}
+
+	UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("LoadEquippedSkillSlots Complete / Count=%d"),
+		SaveGameInstance->SavedSkillSlots.Num()
+	);
 }

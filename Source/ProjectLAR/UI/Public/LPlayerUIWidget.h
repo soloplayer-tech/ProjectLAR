@@ -2,13 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "ProjectLAR/Player/Public/LPlayerSkillSlot.h"
 #include "LPlayerUIWidget.generated.h"
 
 class UProgressBar;
 class UTextBlock;
 class UImage;
 class UMaterialInstanceDynamic;
+class ALPlayerCharacter;
 class ALPlayerCharacterBase;
 
 UCLASS()
@@ -21,7 +21,10 @@ public:
 
 protected:
 	virtual void NativeConstruct() override;
-	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+	virtual void NativeTick(
+		const FGeometry& MyGeometry,
+		float InDeltaTime
+	) override;
 
 protected:
 	UPROPERTY(meta = (BindWidgetOptional))
@@ -29,7 +32,7 @@ protected:
 
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UProgressBar> PB_PlayerMP;
-	
+
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UProgressBar> PB_IdentityGauge;
 
@@ -50,62 +53,9 @@ protected:
 	TObjectPtr<UMaterialInstanceDynamic> DashCooldownMaterial;
 
 	// =========================
-	// Q Skill Cooldown UI
-	// =========================
-
-	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UImage> IMG_QCooldownRadial;
-
-	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UTextBlock> TXT_QCooldown;
-
-	UPROPERTY()
-	TObjectPtr<UMaterialInstanceDynamic> QCooldownMaterial;
-
-	// =========================
-	// W Skill Cooldown UI
-	// =========================
-
-	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UImage> IMG_WCooldownRadial;
-
-	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UTextBlock> TXT_WCooldown;
-
-	UPROPERTY()
-	TObjectPtr<UMaterialInstanceDynamic> WCooldownMaterial;
-
-	// =========================
-	// E Skill Cooldown UI
-	// =========================
-
-	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UImage> IMG_ECooldownRadial;
-
-	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UTextBlock> TXT_ECooldown;
-
-	UPROPERTY()
-	TObjectPtr<UMaterialInstanceDynamic> ECooldownMaterial;
-
-	// =========================
-	// R Skill Cooldown UI
-	// =========================
-
-	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UImage> IMG_RCooldownRadial;
-
-	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UTextBlock> TXT_RCooldown;
-
-	UPROPERTY()
-	TObjectPtr<UMaterialInstanceDynamic> RCooldownMaterial;
-	
-	// =========================
 	// Cast Bar UI
 	// =========================
 
-	
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UProgressBar> PB_CastProgress;
 
@@ -115,12 +65,19 @@ protected:
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> TXT_CastRemaining;
 
+	// =========================
+	// Identity Screen Overlay
+	// =========================
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UImage> IMG_IdentityFlameOverlay;
+
 private:
 	UPROPERTY()
 	TObjectPtr<ALPlayerCharacterBase> ObservedCharacter;
-	
-	UMaterialInstanceDynamic* InitCooldownImage(UImage* CooldownImage);
 
+private:
+	UMaterialInstanceDynamic* InitCooldownImage(UImage* CooldownImage);
 	void InitCooldownText(UTextBlock* CooldownText);
 
 	void UpdateCooldownUI(
@@ -132,12 +89,6 @@ private:
 		float Ratio
 	);
 
-	void UpdateSkillSlotCooldownUI(
-		ELPlayerSkillSlot SkillSlot,
-		UImage* CooldownImage,
-		UMaterialInstanceDynamic* CooldownMaterial,
-		UTextBlock* CooldownText
-	);
-	
+	void UpdateIdentityActiveUI(ALPlayerCharacter* PlayerCharacter);
 	void UpdateCastBarUI();
 };
