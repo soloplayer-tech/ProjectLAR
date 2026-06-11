@@ -29,6 +29,11 @@ AOB_BossCharacter::AOB_BossCharacter()
 	GetCharacterMovement() -> RotationRate = FRotator(0.0f, 360.0f, 0.0f); // 초당 회전 속도
 	GetCharacterMovement() -> MaxWalkSpeed = 400.f;
 	bUseControllerRotationYaw = false;
+	
+	if (GetMesh())
+	{
+		GetMesh()->bReceivesDecals = false;
+	} // 데칼에 대한 랜더링 (빛 반사) 하지 않기.
 }
 
 

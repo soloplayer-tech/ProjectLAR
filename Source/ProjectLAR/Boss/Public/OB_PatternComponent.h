@@ -22,22 +22,40 @@ public:
 	void SelectAndExecute();          // CombatComp가 호출
 	void SetPhase(int32 Phase);       // CombatComp가 Phase 알려줌
 	void OnPatternFinished();
+	
+	// Telegraph Decal Material
+	
+	UPROPERTY(EditAnywhere, Category = "Telegraph|Materials")
+	TObjectPtr<UMaterialInterface> Mat_Circle;
+
+	UPROPERTY(EditAnywhere, Category = "Telegraph|Materials")
+	TObjectPtr<UMaterialInterface> Mat_Box;
+
+	UPROPERTY(EditAnywhere, Category = "Telegraph|Materials")
+	TObjectPtr<UMaterialInterface> Mat_Cone;
 
 private:
 	static EAttackPattern SelectPattern();
 	
 	void ExecutePattern(EAttackPattern Pattern);  
 	
-	void ExecuteHammer();
+	void ExecuteAxe();
 	void ExecuteRush();
 	void ExecuteSlam();
 	void ExecuteCard();
 
+	UPROPERTY()
 	int32 CurPhase = 1; 
+	
+	UPROPERTY()
 	EAttackPattern CurPattern;
 	
+	UPROPERTY()
 	TObjectPtr<AOB_BossCharacter> OwnerCharacter;
 
+	UPROPERTY()
+	UMaterialInstanceDynamic* DynamicDecalMat;
+	
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;

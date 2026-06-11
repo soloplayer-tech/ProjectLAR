@@ -21,10 +21,10 @@ public:
 	AOB_BossAIController();
 	
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Boss|Sight")
-	float Sight_Radius = 3000.f;
+	float SightRadius = 3000.f;
 	
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Boss|Sight")
-	float LoseSightRadius = 1000.f;
+	float LoseSightRadius = 800.f;
 	
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Boss|Sight")
 	float MinRadius = 300.f;  
@@ -33,7 +33,7 @@ public:
 	float MaxRadius = 1000.f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="BossControl")
-	float AcceptanceRadius = 200.f;
+	float AcceptanceRadius = 300.f;
 	
 	UFUNCTION()
 	void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
@@ -69,7 +69,6 @@ private:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	
 	virtual void OnPossess(APawn* InPawn) override; // 원본이 protected이기 때문에 protected안에 선언
 
 public:

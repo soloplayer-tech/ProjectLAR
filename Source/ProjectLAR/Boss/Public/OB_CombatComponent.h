@@ -41,6 +41,7 @@ public:
 	float GetCurHP() const { return CurHP; }
 	float GetHPRatio() const { return CurHP / MaxHP; }
 	
+	// Damage UI
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<ALFloatingDamageActor> FloatingDamageActorClass;
 
@@ -58,7 +59,7 @@ private:
 
 	 // HP
     UPROPERTY(EditDefaultsOnly, Category="Combat|HP")
-    float MaxHP = 100.f; // TODO: Debugging 편의성을 위해서 수치를 낮춰둠 이후 다시 변경 (1000.f)
+    float MaxHP = 1500.f; // TODO: Debugging 편의성을 위해서 수치를 낮춰둠 이후 다시 변경 (1000.f)
 
     UPROPERTY(VisibleAnywhere, Category="Combat|HP")
     float CurHP;
@@ -78,7 +79,6 @@ private:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
-	
 
 public:
 	// Called every frame

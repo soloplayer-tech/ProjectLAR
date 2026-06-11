@@ -35,6 +35,18 @@ public:
 	UFUNCTION()
 	UOB_CombatComponent* GetCombatComponent() const { LOG_TRACE_INFO("Call GetCombatComponent"); return CombatComponent; }
 	
+	// AnimMontage
+	UPROPERTY(EditDefaultsOnly, Category = "Boss Anim")
+	UAnimMontage* RushMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Boss Anim")
+	UAnimMontage* HammerMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Boss Anim")
+	UAnimMontage* SlamMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Boss Anim")
+	UAnimMontage* CardMontage;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<ALFloatingDamageActor> FloatingDamageActorClass;

@@ -14,14 +14,6 @@
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 
-// 카테고리 정의 
-
-/* TODO: 실제로 캐릭터를 움직이는 건 누구지?' → AIController. 상태변경 시 MoveToActor 실행
- * - [ ] : 1. 상태별 동작 정의
- * - [O] : 2. 테스트 대상 객체(Dummy Player) 생성
- * - [O] : 3. 엔진에서 BP 생성 및 동작 테스트
- * - [ ] : 4. 실체 충돌 담당 무기 개발
- */
 
 // Sets default values
 AOB_BossAIController::AOB_BossAIController()
@@ -35,7 +27,7 @@ AOB_BossAIController::AOB_BossAIController()
 	
 	SetPerceptionComponent(*PerceptionComp);
 	
-	SightConfig->SightRadius            = Sight_Radius;
+	SightConfig->SightRadius            = SightRadius;
 	SightConfig->LoseSightRadius        = LoseSightRadius;
 	SightConfig->PeripheralVisionAngleDegrees = 180.f;
 	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
@@ -113,7 +105,7 @@ void AOB_BossAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimul
 				{
 					OnFindTarget(Actor);	
 				} else
-				{	LOG_TRACE_WARN();
+				{
 					FSMComp -> SetState(EBossBattleState::ATTACK);
 				}
 			}
@@ -121,7 +113,6 @@ void AOB_BossAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimul
 	}
 	else
 	{
-		LOG_TRACE_WARN();
 		if (FSMComp && Actor == FSMComp -> GetTargetActor()) 
 		{
 			FSMComp -> SetState(EBossBattleState::IDLE);
