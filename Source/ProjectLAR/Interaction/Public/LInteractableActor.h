@@ -17,7 +17,8 @@ class PROJECTLAR_API ALInteractableActor : public AActor
 public:
 	ALInteractableActor();
 
-	void Interact(APlayerController* InteractingController);
+	UFUNCTION(BlueprintCallable, Category = "Interaction")
+	virtual void Interact(APlayerController* InteractingController);
 
 protected:
 	virtual void BeginPlay() override;
@@ -41,9 +42,18 @@ protected:
 		int32 OtherBodyIndex
 	);
 
-	void SetOutlineEnabled(bool bEnabled);
-	void OpenInteractionWidget(APlayerController* InteractingController);
-	void CloseInteractionWidget();
+	virtual void SetOutlineEnabled(bool bEnabled);
+	virtual void OpenInteractionWidget(APlayerController* InteractingController);
+	virtual void CloseInteractionWidget();
+	virtual void OnInteractionWidgetOpened(
+		UUserWidget* OpenedWidget,
+		APlayerController* InteractingController
+	);
+	virtual void SetInteractionInputMode(
+		APlayerController* InteractingController,
+		UUserWidget* WidgetToFocus
+	) const;
+	virtual void RestoreInteractionInputMode(APlayerController* InteractingController) const;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -55,7 +65,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USphereComponent> InteractionSphere;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Interaction")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction")
 	TSubclassOf<UUserWidget> InteractionWidgetClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction")

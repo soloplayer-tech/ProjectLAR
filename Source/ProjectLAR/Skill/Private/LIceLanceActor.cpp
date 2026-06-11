@@ -187,6 +187,14 @@ void ALIceLanceActor::ApplyImpactDamage()
 		);
 	}
 
+	if (ALPlayerCharacter* OwnerPlayer = Cast<ALPlayerCharacter>(GetOwner()))
+	{
+		OwnerPlayer->PlaySkillImpactSound(
+			ELPlayerSkillID::IceLance,
+			ImpactLocation
+		);
+	}
+
 	/*if (bDrawImpactDebug)
 	{
 		DrawDebugSphere(

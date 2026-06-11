@@ -1,8 +1,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
 #include "LPlayerSkillID.h"
+#include "ProjectLAR/UI/Public/LDraggableWindowWidget.h"
 #include "LSkillWindowWidget.generated.h"
 
 class ALPlayerCharacter;
@@ -10,7 +10,7 @@ class ULSkillIconWidget;
 class UTexture2D;
 
 UCLASS()
-class PROJECTLAR_API ULSkillWindowWidget : public UUserWidget
+class PROJECTLAR_API ULSkillWindowWidget : public ULDraggableWindowWidget
 {
 	GENERATED_BODY()
 

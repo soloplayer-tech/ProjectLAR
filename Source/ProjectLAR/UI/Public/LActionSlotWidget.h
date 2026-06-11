@@ -14,6 +14,8 @@ class UDragDropOperation;
 class UMaterialInstanceDynamic;
 class ULUIDragDropOperation;
 class ALPlayerCharacter;
+class ULInventoryComponent;
+class ULItemDataAsset;
 
 UCLASS()
 class PROJECTLAR_API ULActionSlotWidget : public UUserWidget
@@ -58,9 +60,21 @@ private:
 		ELPlayerSkillSlot& OutSkillSlot
 	) const;
 
+	bool TryConvertToQuickItemSlotIndex(
+		int32& OutQuickItemSlotIndex
+	) const;
+
+	bool TryConvertActionSlotKeyToQuickItemSlotIndex(
+		ELActionSlotKey InSlotKey,
+		int32& OutQuickItemSlotIndex
+	) const;
+
 	ALPlayerCharacter* GetPlayerCharacter() const;
+	ULInventoryComponent* GetInventoryComponent() const;
 
 	void RefreshSlotFromPlayer();
+	void RefreshSkillSlotFromPlayer();
+	void RefreshItemSlotFromInventory();
 	void UpdateSlotLabel();
 
 	void SetSlotIcon(UTexture2D* IconTexture);
@@ -113,4 +127,9 @@ protected:
 
 private:
 	ELPlayerSkillID CachedSkillID = ELPlayerSkillID::None;
+
+	UPROPERTY()
+	TObjectPtr<ULItemDataAsset> CachedItemData;
+
+	int32 CachedItemCount = INDEX_NONE;
 };

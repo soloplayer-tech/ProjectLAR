@@ -2,6 +2,7 @@
 
 #include "LPlayerController.h"
 #include "Blueprint/UserWidget.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Components/SceneComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -117,10 +118,10 @@ void ALInteractableActor::OnInteractionSphereEndOverlap(
 	}
 
 	bPlayerInRange = false;
-	CachedInteractingController = nullptr;
 
 	SetOutlineEnabled(false);
 	CloseInteractionWidget();
+	CachedInteractingController = nullptr;
 
 	UE_LOG(
 		LogTemp,
@@ -140,6 +141,11 @@ void ALInteractableActor::Interact(APlayerController* InteractingController)
 	if (!InteractingController)
 	{
 		return;
+	}
+
+	if (InteractionWidget && !InteractionWidget->IsInViewport())
+	{
+		InteractionWidget = nullptr;
 	}
 
 	if (InteractionWidget)
@@ -178,6 +184,8 @@ void ALInteractableActor::OpenInteractionWidget(
 	}
 
 	InteractionWidget->AddToViewport(80);
+	OnInteractionWidgetOpened(InteractionWidget, InteractingController);
+	SetInteractionInputMode(InteractingController, InteractionWidget);
 
 	UE_LOG(
 		LogTemp,
@@ -194,8 +202,15 @@ void ALInteractableActor::CloseInteractionWidget()
 		return;
 	}
 
+	APlayerController* ControllerToRestore = CachedInteractingController;
+	if (!ControllerToRestore)
+	{
+		ControllerToRestore = InteractionWidget->GetOwningPlayer();
+	}
+
 	InteractionWidget->RemoveFromParent();
 	InteractionWidget = nullptr;
+	RestoreInteractionInputMode(ControllerToRestore);
 
 	UE_LOG(
 		LogTemp,
@@ -214,4 +229,56 @@ void ALInteractableActor::SetOutlineEnabled(bool bEnabled)
 
 	MeshComp->SetRenderCustomDepth(bEnabled);
 	MeshComp->SetCustomDepthStencilValue(OutlineStencilValue);
+}
+
+void ALInteractableActor::OnInteractionWidgetOpened(
+	UUserWidget* OpenedWidget,
+	APlayerController* InteractingController
+)
+{
+}
+
+void ALInteractableActor::SetInteractionInputMode(
+	APlayerController* InteractingController,
+	UUserWidget* WidgetToFocus
+) const
+{
+	if (!InteractingController || !WidgetToFocus)
+	{
+		return;
+	}
+
+	InteractingController->StopMovement();
+	InteractingController->bShowMouseCursor = true;
+
+	UWidgetBlueprintLibrary::SetInputMode_GameAndUIEx(
+		InteractingController,
+		WidgetToFocus,
+		EMouseLockMode::DoNotLock,
+		false,
+		true
+	);
+
+	WidgetToFocus->SetKeyboardFocus();
+}
+
+void ALInteractableActor::RestoreInteractionInputMode(
+	APlayerController* InteractingController
+) const
+{
+	if (!InteractingController)
+	{
+		return;
+	}
+
+	InteractingController->StopMovement();
+	InteractingController->bShowMouseCursor = true;
+
+	UWidgetBlueprintLibrary::SetInputMode_GameAndUIEx(
+		InteractingController,
+		nullptr,
+		EMouseLockMode::DoNotLock,
+		false,
+		true
+	);
 }

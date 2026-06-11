@@ -101,6 +101,14 @@ void ALThunderActor::SpawnThunderStrike()
 		);
 	}
 
+	if (ALPlayerCharacter* OwnerPlayer = Cast<ALPlayerCharacter>(GetOwner()))
+	{
+		OwnerPlayer->PlaySkillImpactSound(
+			ELPlayerSkillID::Thunder,
+			StrikeLocation
+		);
+	}
+
 	ApplyThunderStrikeDamage(StrikeLocation);
 	
 	CurrentStrikeCount++;

@@ -147,6 +147,14 @@ void ALMeteorActor::Impact()
 		);
 	}
 
+	if (ALPlayerCharacter* OwnerPlayer = Cast<ALPlayerCharacter>(GetOwner()))
+	{
+		OwnerPlayer->PlaySkillImpactSound(
+			ELPlayerSkillID::Meteor,
+			ImpactLocation
+		);
+	}
+
 	// 나중에 여기서 범위 데미지 처리
 	// ApplyRadialDamage or SphereOverlapActors
 	ApplyImpactDamage();

@@ -8,6 +8,7 @@
 class UImage;
 class UTextBlock;
 class UTexture2D;
+class ULDraggableWindowWidget;
 
 UCLASS()
 class PROJECTLAR_API ULSkillIconWidget : public UUserWidget
@@ -23,10 +24,17 @@ public:
 
 	ELPlayerSkillID GetSkillID() const;
 
+	void SetOwningWindow(ULDraggableWindowWidget* InOwningWindow);
+
 protected:
 	virtual void NativeConstruct() override;
 
 	virtual FReply NativeOnMouseButtonDown(
+		const FGeometry& InGeometry,
+		const FPointerEvent& InMouseEvent
+	) override;
+
+	virtual FReply NativeOnMouseButtonUp(
 		const FGeometry& InGeometry,
 		const FPointerEvent& InMouseEvent
 	) override;
@@ -50,6 +58,9 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UTexture2D> SkillIconTexture;
+
+	UPROPERTY()
+	TObjectPtr<ULDraggableWindowWidget> OwningWindow;
 
 	FText SkillName;
 };

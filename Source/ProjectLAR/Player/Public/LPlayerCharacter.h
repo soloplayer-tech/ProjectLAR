@@ -16,8 +16,12 @@
 #include "LPlayerCharacter.generated.h"
 
 class UNiagaraSystem;
+class UNiagaraComponent;
 class UAnimMontage;
+class UStaticMeshComponent;
+class USoundBase;
 class UTexture2D;
+class ULInventoryComponent;
 
 UCLASS()
 class PROJECTLAR_API ALPlayerCharacter : public ALPlayerCharacterBase
@@ -26,6 +30,18 @@ class PROJECTLAR_API ALPlayerCharacter : public ALPlayerCharacterBase
 	
 public:
 	ALPlayerCharacter();
+
+	UFUNCTION(BlueprintPure, Category = "Inventory")
+	ULInventoryComponent* GetInventoryComponent() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Weapon")
+	void RefreshEquippedWeaponVisual();
+
+	UFUNCTION(BlueprintPure, Category = "Inventory|Weapon|Visual")
+	UStaticMeshComponent* GetWeaponVisualStaticMeshComponent() const;
+
+	UFUNCTION(BlueprintPure, Category = "Inventory|Weapon|Visual")
+	UNiagaraComponent* GetWeaponVisualNiagaraComponent() const;
 	
 	virtual void Tick(float DeltaSeconds) override;
 	
@@ -46,6 +62,15 @@ public:
 	void LoadEquippedSkillSlots();
 	
 protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
+	TObjectPtr<ULInventoryComponent> InventoryComponent;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory|Weapon|Visual")
+	FName WeaponVisualStaticMeshComponentName = TEXT("StaticMesh_GEN_VARIABLE");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory|Weapon|Visual")
+	FName WeaponVisualNiagaraComponentName = TEXT("Niagara_GEN_VARIABLE");
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Save")
 	FString PlayerSaveSlotName = TEXT("PlayerSaveSlot");
 
@@ -109,6 +134,7 @@ public:
 	bool CanSpendMana(float ManaCost) const;
 	bool SpendMana(float ManaCost);
 	
+	void RecoverHP(float Amount);
 	void RecoverMana(float Amount);
 	void AddIdentityGauge(float Amount);
 	bool CanActivateIdentity() const;
@@ -127,10 +153,14 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Skill|Data")
 	UTexture2D* GetSkillIconTexture(ELPlayerSkillID SkillID) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Skill|Audio")
+	void PlaySkillImpactSound(ELPlayerSkillID SkillID, const FVector& Location) const;
 	
 	
 	
 protected:
+	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
 	
 	void EndBasicAttack();
@@ -144,6 +174,8 @@ protected:
 	
 	void StartIdentityBuffVFX();
 	void StopIdentityBuffVFX();
+	UStaticMeshComponent* FindWeaponVisualStaticMeshComponent() const;
+	UNiagaraComponent* FindWeaponVisualNiagaraComponent() const;
 	
 	
 	float GetIdentityGainBySkill(ELPlayerSkillID SkillID) const;
@@ -193,33 +225,6 @@ protected:
 	float CurrentIdentityGauge = 0.f;
 	
 	// =======================================================================================
-	// Identity Gain
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
-	float FrostFieldIdentityGain = 1.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
-	float BasicAttackIdentityGain = 2.0f;
-
-	// =======================================================================================
-	// Identity Gain - Additional Per Extra Target
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
-	float FrostFieldAdditionalIdentityGainPerTarget = 0.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
-	float BasicAttackAdditionalIdentityGainPerTarget = 0.0f;
-
-	// =======================================================================================
-	// Identity Gain - Max Per Hit Unit
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
-	float FrostFieldMaxIdentityGainPerTick = 1.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Identity")
-	float BasicAttackMaxIdentityGainPerAttack = 2.0f;
-
-	// =======================================================================================
 	// Identity Active
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player|Identity")
@@ -235,6 +240,9 @@ protected:
 	float IdentityCastDurationMultiplier = 0.7f;
 
 	FTimerHandle IdentityTimerHandle;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Weapon", meta = (ClampMin = "0.0"))
+	float WeaponAttackPowerDamageRate = 0.001f;
 	
 	// =======================================================================================
 	// Identity VFX
@@ -255,13 +263,9 @@ protected:
 	// Cooldown Internal - SkillID 기준
 
 	FLPlayerSkillTuning GetSkillTuning(ELPlayerSkillID SkillID) const;
-	FLPlayerSkillTuning GetFallbackSkillTuning(ELPlayerSkillID SkillID) const;
 	FLPlayerSkillCombatTuning GetSkillCombatTuning(ELPlayerSkillID SkillID) const;
-	FLPlayerSkillCombatTuning GetFallbackSkillCombatTuning(ELPlayerSkillID SkillID) const;
 	FLPlayerSkillIdentityTuning GetSkillIdentityTuning(ELPlayerSkillID SkillID) const;
-	FLPlayerSkillIdentityTuning GetFallbackSkillIdentityTuning(ELPlayerSkillID SkillID) const;
 	FLPlayerIceLanceTuning GetSkillIceLanceTuning() const;
-	FLPlayerIceLanceTuning GetFallbackSkillIceLanceTuning() const;
 	const ULPlayerSkillDataAsset* GetSkillDataAsset(ELPlayerSkillID SkillID) const;
 	UClass* GetSkillActorClass(ELPlayerSkillID SkillID) const;
 	UNiagaraSystem* GetSkillMainNiagara(ELPlayerSkillID SkillID) const;
@@ -269,6 +273,11 @@ protected:
 	UNiagaraSystem* GetSkillWarningNiagara(ELPlayerSkillID SkillID) const;
 	UNiagaraSystem* GetSkillImpactNiagara(ELPlayerSkillID SkillID) const;
 	float GetSkillCastStartEffectHeightOffset(ELPlayerSkillID SkillID) const;
+	void ValidateSkillDataSetup() const;
+	bool ValidateSkillDataAsset(
+		ELPlayerSkillID SkillID,
+		const ULPlayerSkillDataAsset* SkillDataAsset
+	) const;
 	void StartSkillCooldown(ELPlayerSkillID SkillID);
 	float GetSkillCooldownDuration(ELPlayerSkillID SkillID) const;
 	float GetSkillLockDuration(ELPlayerSkillID SkillID) const;
@@ -276,6 +285,8 @@ protected:
 	const FTimerHandle* GetSkillCooldownTimerHandle(ELPlayerSkillID SkillID) const;
 	void StartSkillLock(ELPlayerSkillID SkillID);
 	void PlaySkillMontage(ELPlayerSkillID SkillID);
+	void PlaySkillStartSound(ELPlayerSkillID SkillID) const;
+	void PlaySkillCastStartSound(ELPlayerSkillID SkillID) const;
 	void StopActiveSkillMontage();
 	void ResetSkillCooldown(ELPlayerSkillID SkillID);
 	
@@ -318,8 +329,7 @@ protected:
 	
 	// =======================================================================================
 	// Skill Data
-	// 지정된 Database에서 스킬 DataAsset을 찾으면 이 값이 우선한다.
-	// Database가 비어 있거나 해당 SkillID가 없으면 아래 legacy UPROPERTY 값을 fallback으로 사용한다.
+	// 지정된 Database에서 스킬 DataAsset을 찾아 스킬 수치와 연출 데이터를 읽는다.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Data")
 	TObjectPtr<ULPlayerSkillDatabase> SkillDatabase;
 
@@ -329,39 +339,6 @@ protected:
 	// =======================================================================================
 	// Basic Attack
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack")
-	TObjectPtr<UNiagaraSystem> BasicAttackNiagara;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack")
-	TObjectPtr<UAnimMontage> BasicAttackMontage;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack")
-	float BasicAttackDuration = 1.0f;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack")
-	float BasicAttackForwardOffset = 180.0f;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack")
-	float BasicAttackHeightOffset = 0.0f;
-
-	// =======================================================================================
-	// Basic Attack Damage
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack|Damage")
-	float BasicAttackDamage = 10.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack|Damage")
-	float BasicAttackDamageCenterOffset = 180.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack|Damage")
-	float BasicAttackDamageHeightOffset = 50.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack|Damage")
-	FVector BasicAttackDamageBoxHalfExtent = FVector(280.0f, 80.0f, 80.0f);
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|BasicAttack|Debug")
-	bool bDrawBasicAttackDamageDebug = true;
-
 	FVector PendingBasicAttackDirection = FVector::ForwardVector;
 	bool bBasicAttackHitTriggered = false;
 	
@@ -380,49 +357,26 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Dash|Blink")
 	TObjectPtr<UNiagaraSystem> BlinkEndEffect;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Dash|Audio")
+	TObjectPtr<USoundBase> DashStartSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Dash|Audio", meta = (ClampMin = "0.0"))
+	float DashStartSoundVolume = 1.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Dash|Audio", meta = (ClampMin = "0.0"))
+	float DashStartSoundPitch = 1.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Dash|Audio")
+	TObjectPtr<USoundBase> DashEndSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Dash|Audio", meta = (ClampMin = "0.0"))
+	float DashEndSoundVolume = 1.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement|Dash|Audio", meta = (ClampMin = "0.0"))
+	float DashEndSoundPitch = 1.0f;
+
 	void ApplyWindDamage(const FVector& AttackDirection);
 
-	// =======================================================================================
-	// Skill Cooldown - 실제 스킬 기준 재사용 대기시간
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Cooldown")
-	float FrostFieldCooldown = 6.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Cooldown")
-	float MeteorRainCooldown = 10.0f;
-	
-	// =======================================================================================
-	// Skill Mana Cost
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Mana")
-	float FrostFieldManaCost = 900.f;
-
-	// =======================================================================================
-	// Frost Field
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|FrostField")
-	TSubclassOf<ALGroundAreaSkillActor> FrostFieldActorClass;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|FrostField")
-	TObjectPtr<UNiagaraSystem> FrostFieldNiagara;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|FrostField")
-	float FrostFieldDamage = 8.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|FrostField")
-	float FrostFieldRadius = 320.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|FrostField")
-	float FrostFieldDuration = 4.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|FrostField")
-	float FrostFieldTickInterval = 0.5f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|FrostField")
-	float FrostFieldSkillLockDuration = 0.45f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|FrostField")
-	float FrostFieldSpawnHeightOffset = 0.0f;
-	
 	// =======================================================================================
 	// Skill Equip - 슬롯에 장착된 실제 스킬
 

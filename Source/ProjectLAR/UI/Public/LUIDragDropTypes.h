@@ -41,7 +41,7 @@ enum class ELActionSlotKey : uint8
 	Skill_D UMETA(DisplayName = "Skill D"),
 	Skill_F UMETA(DisplayName = "Skill F"),
 
-	// 궁극기 / 각성기 슬롯
+	// 궁극기 슬롯
 	Ultimate_V UMETA(DisplayName = "Ultimate V"),
 
 	// 아이템 / 포션 슬롯

@@ -49,6 +49,11 @@ void ALGroundAreaSkillActor::InitializeGroundAreaSkill(
 		);
 	}
 
+	if (ALPlayerCharacter* OwnerPlayer = Cast<ALPlayerCharacter>(GetOwner()))
+	{
+		OwnerPlayer->PlaySkillImpactSound(SkillID, InCenterLocation);
+	}
+
 	ApplyAreaDamage();
 
 	GetWorldTimerManager().ClearTimer(DamageTickTimerHandle);

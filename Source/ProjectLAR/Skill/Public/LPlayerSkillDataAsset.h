@@ -9,6 +9,7 @@
 class AActor;
 class UAnimMontage;
 class UNiagaraSystem;
+class USoundBase;
 class UTexture2D;
 
 USTRUCT(BlueprintType)
@@ -96,6 +97,39 @@ struct PROJECTLAR_API FLPlayerSkillVisualTuning
 };
 
 USTRUCT(BlueprintType)
+struct PROJECTLAR_API FLPlayerSkillAudioTuning
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Audio")
+	TObjectPtr<USoundBase> StartSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Audio", meta = (ClampMin = "0.0"))
+	float StartSoundVolume = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Audio", meta = (ClampMin = "0.0"))
+	float StartSoundPitch = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Audio")
+	TObjectPtr<USoundBase> CastStartSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Audio", meta = (ClampMin = "0.0"))
+	float CastStartSoundVolume = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Audio", meta = (ClampMin = "0.0"))
+	float CastStartSoundPitch = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Audio")
+	TObjectPtr<USoundBase> ImpactSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Audio", meta = (ClampMin = "0.0"))
+	float ImpactSoundVolume = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Audio", meta = (ClampMin = "0.0"))
+	float ImpactSoundPitch = 1.0f;
+};
+
+USTRUCT(BlueprintType)
 struct PROJECTLAR_API FLPlayerIceLanceTuning
 {
 	GENERATED_BODY()
@@ -167,7 +201,15 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Visual")
 	FLPlayerSkillVisualTuning VisualTuning;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|IceLance")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Audio")
+	FLPlayerSkillAudioTuning AudioTuning;
+
+	UPROPERTY(
+		EditDefaultsOnly,
+		BlueprintReadOnly,
+		Category = "Skill|IceLance",
+		meta = (EditCondition = "SkillID == ELPlayerSkillID::IceLance", EditConditionHides)
+	)
 	FLPlayerIceLanceTuning IceLanceTuning;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill|Animation")

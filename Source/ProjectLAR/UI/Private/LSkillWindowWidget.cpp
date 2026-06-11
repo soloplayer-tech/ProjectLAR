@@ -55,6 +55,7 @@ void ULSkillWindowWidget::InitializeSkillIcons()
 
 	if (WBP_MeteorSkillIcon)
 	{
+		WBP_MeteorSkillIcon->SetOwningWindow(this);
 		WBP_MeteorSkillIcon->SetSkillData(
 			ELPlayerSkillID::Meteor,
 			ResolveSkillName(ELPlayerSkillID::Meteor, FText::FromString(TEXT("Meteor"))),
@@ -64,6 +65,7 @@ void ULSkillWindowWidget::InitializeSkillIcons()
 
 	if (WBP_IceLanceSkillIcon)
 	{
+		WBP_IceLanceSkillIcon->SetOwningWindow(this);
 		WBP_IceLanceSkillIcon->SetSkillData(
 			ELPlayerSkillID::IceLance,
 			ResolveSkillName(ELPlayerSkillID::IceLance, FText::FromString(TEXT("Ice Lance"))),
@@ -73,6 +75,7 @@ void ULSkillWindowWidget::InitializeSkillIcons()
 
 	if (WBP_ThunderSkillIcon)
 	{
+		WBP_ThunderSkillIcon->SetOwningWindow(this);
 		WBP_ThunderSkillIcon->SetSkillData(
 			ELPlayerSkillID::Thunder,
 			ResolveSkillName(ELPlayerSkillID::Thunder, FText::FromString(TEXT("Thunder"))),
@@ -82,6 +85,7 @@ void ULSkillWindowWidget::InitializeSkillIcons()
 
 	if (WBP_WindSkillIcon)
 	{
+		WBP_WindSkillIcon->SetOwningWindow(this);
 		WBP_WindSkillIcon->SetSkillData(
 			ELPlayerSkillID::Wind,
 			ResolveSkillName(ELPlayerSkillID::Wind, FText::FromString(TEXT("Wind"))),
@@ -91,6 +95,7 @@ void ULSkillWindowWidget::InitializeSkillIcons()
 
 	if (ULSkillIconWidget* FrostFieldSkillIcon = GetOrCreateFrostFieldSkillIcon())
 	{
+		FrostFieldSkillIcon->SetOwningWindow(this);
 		UTexture2D* FrostFieldFallbackIcon =
 			FrostFieldIconTexture ? FrostFieldIconTexture.Get() : WindIconTexture.Get();
 

@@ -5,6 +5,7 @@
 #include "Components/TextBlock.h"
 #include "Engine/Texture2D.h"
 #include "InputCoreTypes.h"
+#include "ProjectLAR/UI/Public/LDraggableWindowWidget.h"
 #include "ProjectLAR/UI/Public/LUIDragDropOperation.h"
 
 void ULSkillIconWidget::NativeConstruct()
@@ -38,6 +39,13 @@ ELPlayerSkillID ULSkillIconWidget::GetSkillID() const
 	return SkillID;
 }
 
+void ULSkillIconWidget::SetOwningWindow(
+	ULDraggableWindowWidget* InOwningWindow
+)
+{
+	OwningWindow = InOwningWindow;
+}
+
 FReply ULSkillIconWidget::NativeOnMouseButtonDown(
 	const FGeometry& InGeometry,
 	const FPointerEvent& InMouseEvent
@@ -60,6 +68,22 @@ FReply ULSkillIconWidget::NativeOnMouseButtonDown(
 	}
 
 	return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
+}
+
+FReply ULSkillIconWidget::NativeOnMouseButtonUp(
+	const FGeometry& InGeometry,
+	const FPointerEvent& InMouseEvent
+)
+{
+	const FReply SuperReply =
+		Super::NativeOnMouseButtonUp(InGeometry, InMouseEvent);
+
+	if (OwningWindow)
+	{
+		OwningWindow->BringToFront();
+	}
+
+	return SuperReply;
 }
 
 void ULSkillIconWidget::NativeOnDragDetected(
